@@ -113,9 +113,9 @@ case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
 // For the REPL
 case class Def(n: String, e: Ex) extends Ex {
   def eval(env: Env): Const = {
-    // Use a mutable map initialized with current env so we can evaluate arguments in their own environmnent, creating a cyclic environment
+    // Def should have semantics like LetR, ie. create a cyclic map so recursive definitions work
     val defenv = scala.collection.mutable.Map[String, Const](env toList: _*)
-    val c = e.eval(defenv)
+    val c = e eval defenv
     defenv.put(n, c)
     Defs(defenv)
   }

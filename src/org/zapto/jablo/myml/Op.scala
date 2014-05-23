@@ -4,105 +4,75 @@
 
 package org.zapto.jablo.myml
 
-sealed trait Op {
+abstract class Op(s: String, mk: (Ex,Ex)=>Ex) {
   def eval(c1: Const, c2: Const): Const
-  def mkEx(e1: Ex, e2: Ex): Ex
-  def infix: String
+  def mkEx = mk
+  def infix: String = s
 }
-sealed trait UnOp {
+abstract class UnOp(s: String, mk: Ex=>Ex) {
   def eval(c1: Const): Const
-  def mkEx(e1: Ex): Ex
-  def infix: String
+  def mkEx = mk
+  def infix: String = s
 }
 
-case object ONeg extends UnOp {
+case object ONeg extends UnOp("-", Neg) {
   override def eval(c1: Const): Const = -c1
-  override def mkEx(e1: Ex): Ex = Neg(e1)
-  override def infix = "not "
 }
 
-case object OAdd extends Op {
+case object OAdd extends Op("+", Add) {
   override def eval(c1: Const, c2: Const): Const = c1 + c2
-  override def mkEx(e1: Ex, e2: Ex): Ex = Add(e1, e2)
-  override def infix = "+"
 }
 
-case object OSub extends Op {
+case object OSub extends Op("-", Sub) {
   override def eval(c1: Const, c2: Const): Const = c1 - c2
-  override def mkEx(e1: Ex, e2: Ex): Ex = Sub(e1, e2)
-  override def infix = "-"
 }
 
-case object OMul extends Op {
+case object OMul extends Op("*", Mul) {
   override def eval(c1: Const, c2: Const): Const = c1 * c2
-  override def mkEx(e1: Ex, e2: Ex): Ex = Mul(e1, e2)
-  override def infix = "*"
 }
 
-case object ODiv extends Op {
+case object ODiv extends Op("/", Div) {
   override def eval(c1: Const, c2: Const): Const = c1 / c2
-  override def mkEx(e1: Ex, e2: Ex): Ex = Div(e1, e2)
-  override def infix = "/"
 }
 
-case object OPot extends Op {
+case object OPot extends Op("^", Pot) {
   override def eval(c1: Const, c2: Const): Const = c1 ** c2
-  override def mkEx(e1: Ex, e2: Ex): Ex = Pot(e1, e2)
-  override def infix = "^"
 }
 
-case object OEq extends Op {
+case object OEq extends Op("=", Equ) {
   override def eval(c1: Const, c2: Const): Const = c1 == c2
-  override def mkEx(e1: Ex, e2: Ex): Ex = Equ(e1, e2)
-  override def infix = "="
 }
 
-case object ONe extends Op {
+case object ONe extends Op("<>", Neq) {
   override def eval(c1: Const, c2: Const): Const = c1 != c2
-  override def mkEx(e1: Ex, e2: Ex): Ex = Neq(e1, e2)
-  override def infix = "="
 }
 
-case object OLt extends Op {
+case object OLt extends Op("<", Lt) {
   override def eval(c1: Const, c2: Const): Const = c1 < c2
-  override def mkEx(e1: Ex, e2: Ex): Ex = Lt(e1, e2)
-  override def infix = "="
 }
 
-case object OLe extends Op {
+case object OLe extends Op("<=", Lte) {
   override def eval(c1: Const, c2: Const): Const = c1 <= c2
-  override def mkEx(e1: Ex, e2: Ex): Ex = Lte(e1, e2)
-  override def infix = "="
 }
 
-case object OGt extends Op {
+case object OGt extends Op(">", Gt) {
   override def eval(c1: Const, c2: Const): Const = c1 > c2
-  override def mkEx(e1: Ex, e2: Ex): Ex = Gt(e1, e2)
-  override def infix = "="
 }
 
-case object OGe extends Op {
+case object OGe extends Op(">=", Gte) {
   override def eval(c1: Const, c2: Const): Const = c1 >= c2
-  override def mkEx(e1: Ex, e2: Ex): Ex = Gte(e1, e2)
-  override def infix = "="
 }
 
 // boolean
 
-case object ONot extends UnOp {
+case object ONot extends UnOp("not ", Not) {
   override def eval(c1: Const): Const = !c1
-  override def mkEx(e1: Ex): Ex = Not(e1)
-  override def infix = "not "
 }
 
-case object OAnd extends Op {
+case object OAnd extends Op("and", And) {
   override def eval(c1: Const, c2: Const): Const = c1 && c2
-  override def mkEx(e1: Ex, e2: Ex): Ex = And(e1, e2)
-  override def infix = "="
 }
 
-case object OOr extends Op {
+case object OOr extends Op("or", Or) {
   override def eval(c1: Const, c2: Const): Const = c1 || c2
-  override def mkEx(e1: Ex, e2: Ex): Ex = Or(e1, e2)
-  override def infix = "="
 }
