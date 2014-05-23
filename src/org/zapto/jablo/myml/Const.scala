@@ -49,6 +49,48 @@ abstract class Const extends Ex {
   def mkBool(b: Boolean): Const = if (b) True else False
 }
 
+case object True extends Const {
+  override def ==(c: Const): Const = c match {
+    case True  => True
+    case False => False
+  }
+  override def !=(c: Const): Const = c match {
+    case True  => False
+    case False => True
+  }
+  override def &&(c: Const): Const = c match {
+    case True  => True
+    case False => False
+  }
+  override def ||(c: Const): Const = c match {
+    case True  => True
+    case False => True
+  }
+  override def unary_! : Const = False
+  override def infix: String = "true"
+}
+
+case object False extends Const {
+  override def ==(c: Const): Const = c match {
+    case False => True
+    case True  => False
+  }
+  override def !=(c: Const): Const = c match {
+    case False => False
+    case True  => True
+  }
+  override def &&(c: Const): Const = c match {
+    case False => False
+    case True  => False
+  }
+  override def ||(c: Const): Const = c match {
+    case True  => True
+    case False => False
+  }
+  override def unary_! : Const = True
+  override def infix: String = "false"
+}
+
 case class Z(i: Int) extends Const {
   override def unary_- : Const = Z(-i)
   override def +(c: Const): Const = c match {
@@ -73,66 +115,36 @@ case class Z(i: Int) extends Const {
   }
   // comparison operations
   override def ==(c: Const): Const = c match {
-    case Z(j) => mkBool(i == j)
-    case _    => mkBool(false)
+    case Z(j)        => mkBool(i == j)
+    case c @ Q(n, d) => Q(i, 1) == c
+    case _           => mkBool(false)
   }
   override def !=(c: Const): Const = c match {
-    case Z(j) => mkBool(i != j)
-    case _    => mkBool(true)
+    case Z(j)        => mkBool(i != j)
+    case c @ Q(n, d) => Q(i, 1) != c
+    case _           => mkBool(true)
   }
   override def <(c: Const): Const = c match {
-    case Z(j) => mkBool(i < j)
-    case _    => mkBool(false)
+    case Z(j)        => mkBool(i < j)
+    case c @ Q(n, d) => Q(i, 1) < c
+    case _           => mkBool(false)
   }
   override def <=(c: Const): Const = c match {
-    case Z(j) => mkBool(i <= j)
-    case _    => mkBool(false)
+    case Z(j)        => mkBool(i <= j)
+    case c @ Q(n, d) => Q(i, 1) <= c
+    case _           => mkBool(false)
   }
   override def >(c: Const): Const = c match {
-    case Z(j) => mkBool(i > j)
-    case _    => mkBool(false)
+    case Z(j)        => mkBool(i > j)
+    case c @ Q(n, d) => Q(i, 1) > c
+    case _           => mkBool(false)
   }
   override def >=(c: Const): Const = c match {
-    case Z(j) => mkBool(i >= j)
-    case _    => mkBool(false)
+    case Z(j)        => mkBool(i >= j)
+    case c @ Q(n, d) => Q(i, 1) >= c
+    case _           => mkBool(false)
   }
   override def infix = i.toString
-}
-
-case object True extends Const {
-  override def ==(c: Const): Const = c match {
-    case True => True
-    case _    => False
-  }
-  override def !=(c: Const): Const = c match {
-    case True => False
-    case _    => True
-  }
-  override def &&(c: Const): Const = c match {
-    case True => True
-    case _    => False
-  }
-  override def ||(c: Const): Const = True
-  override def unary_! : Const = False
-  override def infix: String = "true"
-}
-
-case object False extends Const {
-  override def ==(c: Const): Const = c match {
-    case False => True
-    case _     => False
-  }
-  override def !=(c: Const): Const = c match {
-    case False => False
-    case _     => True
-  }
-  override def &&(c: Const): Const = False
-  override def ||(c: Const): Const = c match {
-    case True => True
-    case _    => False
-  }
-  override def unary_! : Const = True
-  override def infix: String = "false"
 }
 
 case class Q(n: Int, d: Int) extends Const {
@@ -161,6 +173,38 @@ case class Q(n: Int, d: Int) extends Const {
     case that @ Z(n)    => Q(pow(numer, n), pow(denom, n))
     case that @ Q(_, _) => throw new RuntimeException("Pow only for whole powers")
   }
+
+  override def ==(c: Const): Const = c match {
+    case Z(j)        => mkBool(equals(Q(j, 1)))
+    case c @ Q(_, _) => mkBool(equals(c))
+    case _           => throw new TypeErrorException("Expected Z or Q " + c)
+  }
+  override def !=(c: Const): Const = c match {
+    case Z(j)        => mkBool(!equals(Q(j, 1)))
+    case c @ Q(n, d) => mkBool(!equals(c))
+    case _           => throw new TypeErrorException("Expected Z or Q " + c)
+  }
+  override def <(c: Const): Const = c match {
+    case Z(j)          => mkBool(n * 1 < j * d)
+    case c @ Q(n1, d1) => mkBool(n * d1 < n1 * d)
+    case _           => throw new TypeErrorException("Expected Z or Q " + c)
+  }
+  override def <=(c: Const): Const = c match {
+    case Z(j)          => mkBool(n * 1 <= j * d)
+    case c @ Q(n1, d1) => mkBool(n * d1 <= n1 * d)
+    case _           => throw new TypeErrorException("Expected Z or Q " + c)
+  }
+  override def >(c: Const): Const = c match {
+    case Z(j)          => mkBool(n * 1 > j * d)
+    case c @ Q(n1, d1) => mkBool(n * d1 > n1 * d)
+    case _           => throw new TypeErrorException("Expected Z or Q " + c)
+  }
+  override def >=(c: Const): Const = c match {
+    case Z(j)          => mkBool(n * 1 >= j * d)
+    case c @ Q(n1, d1) => mkBool(n * d1 >= n1 * d)
+    case _           => throw new TypeErrorException("Expected Z or Q " + c)
+  }
+
   override def infix = n.toString + "/" + d.toString
   override def equals(o: Any) = o match {
     case q @ Q(_, _) => q.numer == numer && q.denom == denom

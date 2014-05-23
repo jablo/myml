@@ -22,6 +22,8 @@ object Ex {
   type Env = scala.collection.Map[String, Const]
 }
 
+class TypeErrorException(msg: String = null, cause: Throwable = null) extends java.lang.Exception(msg, cause) {}
+
 case class Var(n: String) extends Ex {
   override def eval(e: Env): Const = e(n) // 
   override def infix = n
@@ -41,7 +43,7 @@ abstract class Un(e1: Ex, op: UnOp) extends Ex {
 // Binary operator
 abstract class Bin(e1: Ex, e2: Ex, op: Op) extends Ex {
   override def infix = e1.infix + op.infix + e2.infix
-  override def eval(e: Env): Const = op eval(e1 eval e, e2 eval e)
+  override def eval(e: Env): Const = op eval (e1 eval e, e2 eval e)
 }
 
 case class Neg(e1: Ex) extends Un(e1, ONeg)
@@ -66,11 +68,9 @@ case class Ife(e1: Ex, e2: Ex, e3: Ex) extends Ex {
   def eval(e: Env) = {
     val test = e1 eval e
     test match {
-      case Z(i)    => if (i != 0) e2 eval e else e3 eval e
-      case Q(i, _) => if (i != 0) e2 eval e else e3 eval e
-      case True    => e2 eval e
-      case False   => e3 eval e
-      case _       => e3 eval e
+      case True  => e2 eval e
+      case False => e3 eval e
+      case _     => throw new TypeErrorException("Expected boolean expression: " + e1.infix)
     }
   }
   def infix = "if " + e1.infix + " then " + e2.infix + " else " + e3.infix

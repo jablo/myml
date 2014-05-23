@@ -2,7 +2,6 @@
  * (C) 2014 Jacob Lorensen, jacoblorensen@gmail.com
  */
 
-
 package org.zapto.jablo.myml
 
 import org.junit._
@@ -22,7 +21,7 @@ class FunExprTest {
 
   @Test
   def funTest1 = {
-    val p = check(calc.parseAll(calc.expr, "fun (x) => 2*x"))    
+    val p = check(calc.parseAll(calc.expr, "fun (x) => 2*x"))
     assertTrue(p.successful)
     assertEquals(Fun(List("x"), Mul(Z(2), Var("x"))), p.get)
     val e = Map("x" -> Z(5))
@@ -98,33 +97,10 @@ class FunExprTest {
   }
 
   @Test
-  def letRecTest2 = {
-    val p = calc.parseAll(calc.expr, "let* f=fun (x) => if x then x*(f(x-1)) else 1 in f(4)")
-    check(p)
-    val exp = LetR(List("f"), List(Fun(List("x"), Ife(Var("x"), Mul(Var("x"), Par(App(Var("f"), List(Sub(Var("x"), Z(1)))))), Z(1)))), App(Var("f"), List(Z(4))))
-    assertEquals(exp, p.get)
-    assertEquals(Z(24), p.get eval Map())
-    assertEquals(Z(24), p.get eval Map("x" -> Z(6), "y" -> Z(12)))
-  }
-
-  @Test
-  def letRecTest3 = {
-    val p = calc.parseAll(calc.expr, "let* f=fun (x) => if x then x*f(x-1) else 1 in f(4)")
-    check(p)
-    val exp = LetR(List("f"), List(Fun(List("x"), Ife(Var("x"), Mul(Var("x"), App(Var("f"), List(Sub(Var("x"), Z(1))))), Z(1)))), App(Var("f"), List(Z(4))))
-    assertEquals(exp, p.get)
-    assertEquals(Z(24), p.get eval Map())
-    assertEquals(Z(24), p.get eval Map("x" -> Z(6), "y" -> Z(12)))
-  }
-
-  
-  @Test
   def letRecTest4 = {
     val p = calc.parseAll(calc.expr, "let* f = fun(x) => if x=0 then 1 else x*f(x-1) in f(0)")
     check(p)
     println("And p is: " + p.get)
     assertEquals(Z(1), p.get eval Map())
   }
-
-  
 }

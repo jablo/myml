@@ -20,10 +20,14 @@ class IfExprTest {
   }
 
   @Test
-  def ifInt1 = {
-    val p = check(calc.parseAll(calc.expr, "if 1 then 2 else 0"))
-    assertEquals(Ife(Z(1), Z(2), Z(0)), p.get)
-    assertEquals(Z(2), p.get eval e)
+  def ifInt1: Unit = {
+    try {
+      val p = check(calc.parseAll(calc.expr, "if 1 then 2 else 0"))
+      p.get eval e
+      fail("Shuold produce TypeErrorException")
+    } catch {
+      case e:TypeErrorException => Unit
+    }
   }
 
   

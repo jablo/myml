@@ -74,7 +74,7 @@ class Parser extends JavaTokenParsers with PackratParsers {
   lazy val pexpr: ExPar = "(" ~> expr <~ ")" ^^ ((f) => Par(f))
 
   // Arithmetic Operator terminals
-  lazy val cmpop: OpPar = "<>" ^^ ((_) => OLt) | ">=" ^^ ((_) => OGe) | "<=" ^^ ((_) => OLe) |
+  lazy val cmpop: OpPar = "<>" ^^ ((_) => ONe) | ">=" ^^ ((_) => OGe) | "<=" ^^ ((_) => OLe) |
     "<" ^^ ((_) => OLt) | ">" ^^ ((_) => OGt) | "=" ^^ ((_) => OEq)
   lazy val sumop: OpPar = "+" ^^ ((_) => OAdd) | "-" ^^ ((_) => OSub)
   lazy val mulop: OpPar = "*" ^^ ((_) => OMul) | "/" ^^ ((_) => ODiv)
