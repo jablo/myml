@@ -13,7 +13,13 @@ class Parser extends JavaTokenParsers with PackratParsers {
   type UnOpPar = PackratParser[UnOp]
   type EqPar = PackratParser[(String, Ex)]
 
+  // The MyML language parser
   lazy val expr: ExPar = cond | fun | let | letr | arith
+
+  // REPL commands
+  lazy val repl: ExPar = "def" ~> assign ^^ ((p) => { val (a, b) = p; Def(a, b) }) |
+    "undef" ~> ident ^^((p) => Undef(p)) |
+    expr
 
   // Control structures
   lazy val cond: ExPar = ("if" ~> arith <~ "then") ~ expr ~ ("else" ~> expr) ^^ {
@@ -54,7 +60,7 @@ class Parser extends JavaTokenParsers with PackratParsers {
   lazy val boolun: ExPar = notop ~ boolun ^^ {
     case op ~ e => op.mkEx(e)
   } | sum
-  
+
   lazy val sum: ExPar = sum ~ sumop ~ product ^^ {
     case e1 ~ op ~ e2 => op.mkEx(e1, e2)
   } | product
@@ -88,9 +94,9 @@ class Parser extends JavaTokenParsers with PackratParsers {
 
   // Terminals
   lazy val num: ExPar = wholeNumber ~ ("/" ~> wholeNumber) ^^ {
-    case n ~ d => Q(Integer.parseInt(n), Integer.parseInt(d))
+    case n ~ d => Q(BigInt(n), BigInt(d))
   } |
-    wholeNumber ^^ ((p) => Z(Integer.parseInt(p))) |
+    wholeNumber ^^ ((p) => Z(BigInt(p))) |
     "true" ^^ ((_) => True) | "false" ^^ ((_) => False)
   lazy val variable: ExPar = ident ^^ ((p) => Var(p))
 }

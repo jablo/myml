@@ -29,4 +29,15 @@ in d(g)(5)
 let f = fun(x) => 2/3*x^2+1/3*x-2 in f(5)
 Gives: Q(49,3)
 
+5) Recursion without let*
+let fac=fun(n,f)=>if n=0 then 1 else n*f(n-1,f) in fac(4,fac)
 
+or the equivalent
+
+(fun(fac)=>fac(4, fac))(fun (n,f) => if n=0 then 1 else n*f(n-1, f))
+
+6) Y combinator
+
+let Y=fun(fu) => (fun(recur) => recur(recur)) (fun(recur) => fun(x) => fu(recur(recur))(x)); 
+    fac=fun(recur)=>fun(n)=>if n=0 then 1 else n*recur(n-1) 
+in Y(fac)(4)

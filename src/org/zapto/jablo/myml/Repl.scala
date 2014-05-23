@@ -5,7 +5,7 @@
 package org.zapto.jablo.myml
 
 object Repl {
-  val env = scala.collection.mutable.Map[String, Const]()
+  var env = scala.collection.Map[String, Const]()
   val calc = new Parser()
 
   def check(p: calc.ParseResult[Ex]): calc.ParseResult[Ex] = {
@@ -20,11 +20,24 @@ object Repl {
    * @param args the command line arguments
    */
   def main(args: Array[String]): Unit = {
-    Iterator.continually({ print("MyML> "); Console.readLine }).takeWhile(_ != null).
+    Iterator.continually({ print("MyML> "); Console.readLine }).takeWhile((l) => l != null && l != "quit").
       foreach(line => {
-        val p = calc.parseAll(calc.expr, line)
-        check(p);
-        println(p.get.eval(env))
+        try {
+          val p = calc.parseAll(calc.repl, line)
+          check(p);
+          val exp = p.get
+          println("Parsed: " + exp)
+          println(" Infix: " + (exp infix))
+          val ev = exp eval env
+          println("Result: " + ev)
+          println(" Infix:" + ev.infix)
+          ev match {
+            case Defs(e) => env = e
+            case _       => Unit
+          }
+        } catch {
+          case e: Exception => println(e)
+        }
       })
   }
 }

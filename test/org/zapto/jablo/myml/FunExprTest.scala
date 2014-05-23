@@ -100,7 +100,40 @@ class FunExprTest {
   def letRecTest4 = {
     val p = calc.parseAll(calc.expr, "let* f = fun(x) => if x=0 then 1 else x*f(x-1) in f(0)")
     check(p)
-    println("And p is: " + p.get)
     assertEquals(Z(1), p.get eval Map())
+  }
+
+  @Test
+  def dirAppTest1 = {
+    val p = calc.parseAll(calc.expr, "(fun(x) => 2*x^2+3)(4)")
+    check(p)
+    assertEquals(Z(35), p.get eval Map())
+  }
+
+  @Test
+  def simpleLetRecursion = {
+    val p = check(calc.parseAll(calc.expr, "let fac=fun(n,f)=>if n=0 then 1 else n*f(n-1,f) in fac(4,fac)"))
+    assertEquals(Z(24), p.get eval e)
+    println(p.get infix)
+  }
+
+  @Test
+  def simpleFunRecursion = {
+    val p = check(calc.parseAll(calc.expr, "(fun(fac)=>fac(4, fac))(fun (n,f) => if n=0 then 1 else n*f(n-1, f))"))
+    assertEquals(Z(24), p.get eval e)
+  }
+
+  @Test
+  def simpleFunRecursion2 = {
+    val p = check(calc.parseAll(calc.expr, "let fak=fun(n)=>(fun(fac)=>fac(n, fac))(fun (n,f) => if n=0 then 1 else n*f(n-1, f)) in fak(5)"))
+    assertEquals(Z(120), p.get eval e)
+  }
+
+  @Test
+  def yComb = {
+    val p = check(calc.parseAll(calc.expr,
+      "let Y  = fun(fu) => (fun(recur) => recur(recur)) (fun(recur) => fun(x) => fu(recur(recur))(x)); " +
+        "    fac= fun(recur)=>fun(n)=>if n=0 then 1 else n*recur(n-1) in Y(fac)(5)"))
+    assertEquals(Z(120), p.get eval e)
   }
 }

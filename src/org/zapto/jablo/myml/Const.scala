@@ -8,22 +8,24 @@ import Ex.Env
 
 abstract class Const extends Ex {
   override def eval(e: Env): Const = this
-  def +(c: Const): Const = throw new RuntimeException("Illegal operation")
-  def -(c: Const): Const = throw new RuntimeException("Illegal operation")
-  def *(c: Const): Const = throw new RuntimeException("Illegal operation")
-  def /(c: Const): Const = throw new RuntimeException("Illegal operation")
-  def **(c: Const): Const = throw new RuntimeException("Illegal operation")
-  def ==(c: Const): Const = throw new RuntimeException("Illegal operation")
-  def !=(c: Const): Const = throw new RuntimeException("Illegal operation")
-  def <(c: Const): Const = throw new RuntimeException("Illegal operation")
-  def <=(c: Const): Const = throw new RuntimeException("Illegal operation")
-  def >(c: Const): Const = throw new RuntimeException("Illegal operation")
-  def >=(c: Const): Const = throw new RuntimeException("Illegal operation")
-  def &&(c: Const): Const = throw new RuntimeException("Illegal operation")
-  def ||(c: Const): Const = throw new RuntimeException("Illegal operation")
-  def unary_! : Const = throw new RuntimeException("Illegal operation")
-  def unary_- : Const = throw new RuntimeException("Illegal operation")
-  protected final def pow(b: Int, ex: Int): Int =
+  private def undef(op: String, c: Const): Const = throw new UndefinedOperationException("Undefined operation " + this + op + c)
+  private def undef(op: String): Const = throw new UndefinedOperationException("Undefined operation " + op + " " + this)
+  def +(c: Const): Const = undef("+", c);
+  def -(c: Const): Const = undef("-",c)
+  def *(c: Const): Const = undef("*",c)
+  def /(c: Const): Const = undef("/",c)
+  def **(c: Const): Const = undef("^",c)
+  def ==(c: Const): Const = undef("=",c)
+  def !=(c: Const): Const = undef("<>",c)
+  def <(c: Const): Const = undef("<",c)
+  def <=(c: Const): Const = undef("<=",c)
+  def >(c: Const): Const = undef(">",c)
+  def >=(c: Const): Const = undef(">=",c)
+  def &&(c: Const): Const = undef("and",c)
+  def ||(c: Const): Const = undef("or",c)
+  def unary_! : Const = undef("not")
+  def unary_- : Const = undef("-")
+  protected final def pow(b: BigInt, ex: BigInt): BigInt =
     if (ex < 0) {
       require(b != 0)
       if (b == 1) 1
@@ -33,14 +35,14 @@ abstract class Const extends Ex {
     } else {
       _pow(1, b, ex)
     }
-  protected final def _pow(t: Int, b: Int, e: Int): Int = {
+  protected final def _pow(t: BigInt, b: BigInt, e: BigInt): BigInt = {
     if (e == 0) t
     else if ((e & 1) == 1)
       _pow(t * b, b * b, e >> 1)
     else
       _pow(t, b * b, e >> 1)
   }
-  protected final def gcd(x: Int, y: Int): Int = {
+  protected final def gcd(x: BigInt, y: BigInt): BigInt = {
     if (x == 0) y
     else if (x < 0) gcd(-x, y)
     else if (y < 0) -gcd(x, -y)
@@ -91,7 +93,7 @@ case object False extends Const {
   override def infix: String = "false"
 }
 
-case class Z(i: Int) extends Const {
+case class Z(i: BigInt) extends Const {
   override def unary_- : Const = Z(-i)
   override def +(c: Const): Const = c match {
     case Z(j)    => Z(i + j)
@@ -147,11 +149,11 @@ case class Z(i: Int) extends Const {
   override def infix = i.toString
 }
 
-case class Q(n: Int, d: Int) extends Const {
+case class Q(n: BigInt, d: BigInt) extends Const {
   require(d != 0)
   private val g = gcd(n, d)
-  val numer: Int = n / g
-  val denom: Int = d / g
+  val numer: BigInt = n / g
+  val denom: BigInt = d / g
   override def unary_- : Const = Q(-numer, denom)
   override def +(t: Const) = t match {
     case that @ Z(n)      => this + Q(n, 1)
@@ -187,25 +189,25 @@ case class Q(n: Int, d: Int) extends Const {
   override def <(c: Const): Const = c match {
     case Z(j)          => mkBool(n * 1 < j * d)
     case c @ Q(n1, d1) => mkBool(n * d1 < n1 * d)
-    case _           => throw new TypeErrorException("Expected Z or Q " + c)
+    case _             => throw new TypeErrorException("Expected Z or Q " + c)
   }
   override def <=(c: Const): Const = c match {
     case Z(j)          => mkBool(n * 1 <= j * d)
     case c @ Q(n1, d1) => mkBool(n * d1 <= n1 * d)
-    case _           => throw new TypeErrorException("Expected Z or Q " + c)
+    case _             => throw new TypeErrorException("Expected Z or Q " + c)
   }
   override def >(c: Const): Const = c match {
     case Z(j)          => mkBool(n * 1 > j * d)
     case c @ Q(n1, d1) => mkBool(n * d1 > n1 * d)
-    case _           => throw new TypeErrorException("Expected Z or Q " + c)
+    case _             => throw new TypeErrorException("Expected Z or Q " + c)
   }
   override def >=(c: Const): Const = c match {
     case Z(j)          => mkBool(n * 1 >= j * d)
     case c @ Q(n1, d1) => mkBool(n * d1 >= n1 * d)
-    case _           => throw new TypeErrorException("Expected Z or Q " + c)
+    case _             => throw new TypeErrorException("Expected Z or Q " + c)
   }
 
-  override def infix = n.toString + "/" + d.toString
+  override def infix = numer.toString + "/" + denom.toString
   override def equals(o: Any) = o match {
     case q @ Q(_, _) => q.numer == numer && q.denom == denom
     case _           => false
@@ -213,3 +215,7 @@ case class Q(n: Int, d: Int) extends Const {
   override def hashCode = 13 * numer.hashCode * denom.hashCode;
 }
 
+// For the REPL - to return a modified environment
+case class Defs(e:Env) extends Const {
+  override def infix = "defined: " + (e keys)
+}

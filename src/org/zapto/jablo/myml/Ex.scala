@@ -22,7 +22,9 @@ object Ex {
   type Env = scala.collection.Map[String, Const]
 }
 
-class TypeErrorException(msg: String = null, cause: Throwable = null) extends java.lang.Exception(msg, cause) {}
+class MyMLException(msg: String = null, cause: Throwable = null) extends java.lang.Exception(msg, cause) {}
+class TypeErrorException(msg: String = null, cause: Throwable = null) extends MyMLException(msg, cause) {}
+class UndefinedOperationException(msg: String = null, cause: Throwable = null) extends MyMLException(msg, cause) {}
 
 case class Var(n: String) extends Ex {
   override def eval(e: Env): Const = e(n) // 
@@ -106,4 +108,21 @@ case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
     body eval letrecenv
   }
   def infix = "let* " + (fargs zip (args map ((x) => x.infix))).mkString("; ") + " in " + body.infix
+}
+
+// For the REPL
+case class Def(n: String, e: Ex) extends Ex {
+  def eval(env: Env): Const = {
+    // Use a mutable map initialized with current env so we can evaluate arguments in their own environmnent, creating a cyclic environment
+    val defenv = scala.collection.mutable.Map[String, Const](env toList: _*)
+    val c = e.eval(defenv)
+    defenv.put(n, c)
+    Defs(defenv)
+  }
+  def infix = "defining " + n;
+}
+
+case class Undef(n: String) extends Ex {
+  def eval(env: Env): Const = Defs(env - n)
+  def infix = "undefining " + n;
 }
