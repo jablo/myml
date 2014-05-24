@@ -80,7 +80,7 @@ case class Ife(e1: Ex, e2: Ex, e3: Ex) extends Ex {
 
 case class Fun(fargs: List[String], body: Ex) extends Ex {
   def eval(e: Env) = Clo(this, e)
-  def infix = "fun " + fargs.mkString(", ") + " => " + body.infix
+  def infix = "fun " + fargs.mkString("(", ", ", ")") + " => " + body.infix
 }
 
 case class Clo(e1: Ex, env: Env) extends Const {
@@ -96,7 +96,10 @@ case class App(fexp: Ex, args: List[Ex]) extends Ex {
     val env2 = fenv ++ Map(fargs zip actarg: _*)
     body eval env2
   }
-  def infix = fexp.infix + "(" + (args map (_ infix)).mkString(", ") + ")"
+  def infix = (fexp match {
+    case Fun(_, _) | Clo(Fun(_, _), _) => "(" + fexp.infix + ")"
+    case _                             => fexp.infix
+  }) + (args map (_ infix)).mkString("(", ", ", ")");
 }
 
 case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
