@@ -4,8 +4,10 @@
 
 package org.zapto.jablo.myml
 
+import scala.collection._
+
 object Repl {
-  var env = scala.collection.Map[String, Const]()
+  val env = mutable.Map[String, Const]()
   val calc = new Parser()
 
   def check(p: calc.ParseResult[Ex]): calc.ParseResult[Ex] = {
@@ -30,10 +32,11 @@ object Repl {
           println(" Infix: " + (exp infix))
           val ev = exp eval env
           println("Result: " + ev)
-          println(" Infix:" + ev.infix)
+          println(" Infix: " + ev.infix)
           ev match {
-            case Defs(e) => env = e
-            case _       => Unit
+            case ReplDef(n, c) => env += Pair(n, c)
+            case ReplUnDef(n)  => env -= n
+            case _             => Unit
           }
         } catch {
           case e: Exception => println(e)

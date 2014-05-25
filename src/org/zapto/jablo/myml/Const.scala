@@ -54,6 +54,11 @@ abstract class Const extends Ex {
 }
 
 // For the REPL - to return a modified environment
-case class Defs(e: Env) extends Const {
-  override def infix = "defined: " + (e keys)
+case class ReplDef(n: String, c: Const) extends Const {
+  override def infix = "define " + n + "=" + c
 }
+
+case class ReplUnDef(n: String) extends Const {
+  override def infix = "undefine: " + n
+}
+

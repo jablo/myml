@@ -4,7 +4,8 @@
 
 package org.zapto.jablo.myml
 
-import Ex.Env;
+import Ex.Env
+import scala.collection._
 
 /**
  * Expressions
@@ -12,9 +13,10 @@ import Ex.Env;
  * <li>infix method like toString, but tries to generate an infix notation of the program that could be re-parsed
  * </ul>
  */
-trait Ex {
+abstract class Ex {
   def eval(e: Env): Const
   def infix: String
+  protected def typerr(s: String, e: Ex): Nothing = throw new TypeErrorException("Expected " + s + " expression: " + e.infix)
 }
 
 object Ex {
@@ -72,7 +74,7 @@ case class Ife(e1: Ex, e2: Ex, e3: Ex) extends Ex {
     test match {
       case True  => e2 eval e
       case False => e3 eval e
-      case _     => throw new TypeErrorException("Expected boolean expression: " + e1.infix)
+      case _     => typerr("boolean", e1)
     }
   }
   def infix = "if " + e1.infix + " then " + e2.infix + " else " + e3.infix
@@ -105,7 +107,7 @@ case class App(fexp: Ex, args: List[Ex]) extends Ex {
 case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
   def eval(env: Env) = {
     // Use a mutable map initialized with current env so we can evaluate arguments in their own environmnent, creating a cyclic environment
-    val letrecenv = scala.collection.mutable.Map[String, Const](env toList: _*)
+    val letrecenv = mutable.Map[String, Const](env toList: _*)
     val actarg = args map (_ eval letrecenv);
     letrecenv ++= fargs zip actarg
     body eval letrecenv
@@ -113,19 +115,13 @@ case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
   def infix = "let* " + (fargs zip (args map ((x) => x.infix))).mkString("; ") + " in " + body.infix
 }
 
-// For the REPL
+// For the REPL we use a mutable Map so we can dynamically add and remove function defs
 case class Def(n: String, e: Ex) extends Ex {
-  def eval(env: Env): Const = {
-    // Def should have semantics like LetR, ie. create a cyclic map so recursive definitions work
-    val defenv = scala.collection.mutable.Map[String, Const](env toList: _*)
-    val c = e eval defenv
-    defenv.put(n, c)
-    Defs(defenv)
-  }
-  def infix = "defining " + n;
+  def eval(env: Env): Const = ReplDef(n, e eval env)
+  def infix = "def " + n + "=" + e.infix
 }
 
 case class Undef(n: String) extends Ex {
-  def eval(env: Env): Const = Defs(env - n)
-  def infix = "undefining " + n;
+  def eval(env: Env): Const = ReplUnDef(n) 
+  def infix = "undef " + n;
 }
