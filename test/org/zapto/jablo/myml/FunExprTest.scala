@@ -26,8 +26,8 @@ class FunExprTest {
     assertTrue(p.successful)
     assertEquals(Fun(List("x"), Mul(Z(2), Var("x"))), p.get)
     val e = Map("x" -> Z(5))
-    assertEquals(Clo(Fun(List("x"), Mul(Z(2), Var("x"))), e), p.get.eval(e))
-//    assertEquals(p.get, reparse(p))
+    assertEquals(Clo(List("x"), Mul(Z(2), Var("x")), e), p.get.eval(e))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -37,18 +37,22 @@ class FunExprTest {
     assertEquals(App(Fun(List("a", "b"), Add(Var("a"), Var("b"))), List(Z(1), Z(2))), p.get)
     assertEquals(Z(3), p.get.eval(Map()))
     assertEquals(Z(3), p.get.eval(Map("a" -> Z(45))))
-//    assertEquals(p.get, reparse(p))
+    println("letTest1 - pars: " + p.get)
+    println("         - infix: " + p.get.infix)
+    val rp = reparse(p)
+    println("         - repar: " + rp)
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
   def funTest2 = {
     val p = calc.parseAll(calc.expr, "(fun (x) => 5*x+2)")
     check(p)
-    val exp = Fun(List("x"), Add(Mul(Z(5), Var("x")), Z(2)))
-    val pexp = Par(exp)
+    val body = Add(Mul(Z(5), Var("x")), Z(2))
+    val pexp = Par(Fun(List("x"), body))
     assertEquals(pexp, p.get)
-    assertEquals(Clo(exp, Map()), p.get.eval(Map()))
-//    assertEquals(p.get, reparse(p))
+    assertEquals(Clo(List("x"), body, Map()), p.get.eval(Map()))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -56,10 +60,10 @@ class FunExprTest {
     val p = calc.parseAll(calc.expr, "(fun (x) => 3*x+1) (4)")
     check(p)
     val fexp = Fun(List("x"), Add(Mul(Z(3), Var("x")), Z(1)))
-    val exp = App(Par(fexp), List(Z(4)))
+    val exp = App(fexp, List(Z(4)))
     assertEquals(exp, p.get)
     assertEquals(Z(13), p.get.eval(Map()))
-//    assertEquals(p.get, reparse(p))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -67,11 +71,11 @@ class FunExprTest {
     val p = calc.parseAll(calc.expr, "(fun (x) => 7*x+7 )(4)")
     check(p)
     val body = Add(Mul(Z(7), Var("x")), Z(7))
-    val fexp = Par(Fun(List("x"), body))
+    val fexp = Fun(List("x"), body)
     val app = App(fexp, List(Z(4)))
     assertEquals(app, p.get)
     assertEquals(Z(35), p.get.eval(Map()))
-//    assertEquals(p.get, reparse(p))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -84,7 +88,7 @@ class FunExprTest {
     println("letFunTest1 infix: " + p.get.infix)
     val rp = reparse(p)
     println("letFunTest1 rpars: " + rp.infix)
-//    assertEquals(p.get, rp)
+    assertEquals(p.get, rp)
   }
 
   @Test
@@ -94,7 +98,7 @@ class FunExprTest {
     val exp = App(Fun(List("f"), App(Var("f"), List(Z(4)))), List(Par(Fun(List("x"), Add(Mul(Z(8), Var("x")), Z(4))))))
     assertEquals(exp, p.get)
     assertEquals(Z(36), p.get.eval(Map()))
-//    assertEquals(p.get, reparse(p))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -105,7 +109,11 @@ class FunExprTest {
     assertEquals(exp, p.get)
     assertEquals(Z(16), p.get eval Map())
     assertEquals(Z(16), p.get eval Map("x" -> Z(12)))
-//    assertEquals(p.get, reparse(p))
+    println("letRecTest1 - pars: " + p.get)
+    println("            - infix: " + p.get.infix)
+    val rp = reparse(p)
+    println("            - repar: " + rp)
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -113,7 +121,7 @@ class FunExprTest {
     val p = calc.parseAll(calc.expr, "let* f = fun(x) => if x=0 then 1 else x*f(x-1) in f(0)")
     check(p)
     assertEquals(Z(1), p.get eval Map())
-//    assertEquals(p.get, reparse(p))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -121,7 +129,7 @@ class FunExprTest {
     val p = calc.parseAll(calc.expr, "(fun(x) => 2*x^2+3)(4)")
     check(p)
     assertEquals(Z(35), p.get eval Map())
-//    assertEquals(p.get, reparse(p))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -129,21 +137,21 @@ class FunExprTest {
     val p = check(calc.parseAll(calc.expr, "let fac=fun(n,f)=>if n=0 then 1 else n*f(n-1,f) in fac(4,fac)"))
     assertEquals(Z(24), p.get eval e)
     println(p.get infix)
-//    assertEquals(p.get, reparse(p))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
   def simpleFunRecursion = {
     val p = check(calc.parseAll(calc.expr, "(fun(fac)=>fac(4, fac))(fun (n,f) => if n=0 then 1 else n*f(n-1, f))"))
     assertEquals(Z(24), p.get eval e)
-//    assertEquals(p.get, reparse(p))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
   def simpleFunRecursion2 = {
     val p = check(calc.parseAll(calc.expr, "let fak=fun(n)=>(fun(fac)=>fac(n, fac))(fun (n,f) => if n=0 then 1 else n*f(n-1, f)) in fak(5)"))
     assertEquals(Z(120), p.get eval e)
-//    assertEquals(p.get, reparse(p))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -152,6 +160,10 @@ class FunExprTest {
       "let Y  = fun(fu) => (fun(recur) => recur(recur)) (fun(recur) => fun(x) => fu(recur(recur))(x)); " +
         "    fac= fun(recur)=>fun(n)=>if n=0 then 1 else n*recur(n-1) in Y(fac)(5)"))
     assertEquals(Z(120), p.get eval e)
-//    assertEquals(p.get, reparse(p))
+    println("yComb - pars: " + p.get)
+    println("      - infix: " + p.get.infix)
+    val rp = reparse(p)
+    println("      - repar: " + rp)
+    assertEquals(p.get, reparse(p))
   }
 }

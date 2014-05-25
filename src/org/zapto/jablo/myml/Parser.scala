@@ -18,7 +18,7 @@ class Parser extends JavaTokenParsers with PackratParsers {
 
   // REPL commands
   lazy val repl: ExPar = "def" ~> assign ^^ ((p) => { val (a, b) = p; Def(a, b) }) |
-    "undef" ~> ident ^^((p) => Undef(p)) |
+    "undef" ~> ident ^^ ((p) => Undef(p)) |
     expr
 
   // Control structures
@@ -74,14 +74,17 @@ class Parser extends JavaTokenParsers with PackratParsers {
     case op ~ e => op.mkEx(e)
   } | term
   lazy val term: ExPar = app | num | variable | pexpr
-  lazy val app: ExPar = (app | variable | pexpr) ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
+  lazy val app: ExPar = (app | variable | pexpr2) ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
     case fn ~ args => App(fn, args)
   }
   lazy val pexpr: ExPar = "(" ~> expr <~ ")" ^^ ((f) => Par(f))
+  lazy val pexpr2: ExPar = "(" ~> expr <~ ")" 
 
-  // Arithmetic Operator terminals
+  // Comparison Operator terminals
   lazy val cmpop: OpPar = "<>" ^^ ((_) => ONe) | ">=" ^^ ((_) => OGe) | "<=" ^^ ((_) => OLe) |
     "<" ^^ ((_) => OLt) | ">" ^^ ((_) => OGt) | "=" ^^ ((_) => OEq)
+
+  // Arithmetic Operator terminals
   lazy val sumop: OpPar = "+" ^^ ((_) => OAdd) | "-" ^^ ((_) => OSub)
   lazy val mulop: OpPar = "*" ^^ ((_) => OMul) | "/" ^^ ((_) => ODiv)
   lazy val powop: OpPar = "^" ^^ ((_) => OPot)

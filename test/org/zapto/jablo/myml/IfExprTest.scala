@@ -27,18 +27,17 @@ class IfExprTest {
       p.get eval e
       fail("Shuold produce TypeErrorException")
     } catch {
-      case e:TypeErrorException => Unit
+      case e: TypeErrorException => Unit
     }
   }
 
-  
   @Test
-  def ifLte1= {
+  def ifLte1 = {
     val p = check(calc.parseAll(calc.expr, "if x <= 4 then 6 else 7"))
     assertEquals(Ife(Lte(Var("x"), Z(4)), Z(6), Z(7)), p.get);
     assertEquals(Z(7), p.get.eval(Map("x" -> Z(12))))
-      assertEquals(p.get, reparse(p))
-}
+    assertEquals(p.get, reparse(p))
+  }
 
   @Test
   def ifLteComposed = {
@@ -48,28 +47,31 @@ class IfExprTest {
     assertEquals(p.get, reparse(p))
   }
 
-  
   @Test
   def ifBool1 = {
     val p = check(calc.parseAll(calc.expr, "if true then 2 else 0"))
     assertEquals(Ife(True, Z(2), Z(0)), p.get)
     assertEquals(Z(2), p.get eval e)
-      assertEquals(p.get, reparse(p))
-}
+    assertEquals(p.get, reparse(p))
+  }
 
   @Test
   def ifNested1 = {
     val p = check(calc.parseAll(calc.expr, "if false then if true then 3 else 2 else 1"))
     assertEquals(Ife(False, Ife(True, Z(3), Z(2)), Z(1)), p.get)
     assertEquals(Z(1), p.get eval e)
-      assertEquals(p.get, reparse(p))
-}
-  
-  @Test 
+    assertEquals(p.get, reparse(p))
+  }
+
+  @Test
   def ifHigher1 = {
     val p = check(calc.parseAll(calc.expr, "(if true then fun(x)=>x+1 else fun(x)=>2+x)(5)"))
-    assertEquals(App(Par(Ife(True,Fun(List("x"), Add(Var("x"),Z(1))), Fun(List("x"), Add(Z(2),Var("x"))))),List(Z(5))), p.get)
+    assertEquals(App(Ife(True, Fun(List("x"), Add(Var("x"), Z(1))), Fun(List("x"), Add(Z(2), Var("x")))), List(Z(5))), p.get)
     assertEquals(Z(6), p.get eval e)
-      assertEquals(p.get, reparse(p))
-}
+    println("ifHighr1 - pars : " + p.get)
+    println("         - infix: " + p.get.infix)
+    val rp = reparse(p)
+    println("         - repar: " + rp)    
+    assertEquals(p.get, reparse(p))
+  }
 }

@@ -81,26 +81,26 @@ case class Ife(e1: Ex, e2: Ex, e3: Ex) extends Ex {
 }
 
 case class Fun(fargs: List[String], body: Ex) extends Ex {
-  def eval(e: Env) = Clo(this, e)
+  def eval(e: Env) = Clo(fargs, body, e)
   def infix = "fun " + fargs.mkString("(", ", ", ")") + " => " + body.infix
 }
 
-case class Clo(e1: Ex, env: Env) extends Const {
+case class Clo(fargs: List[String], body: Ex, env: Env) extends Const {
   // avoid printing environment values - letrec creates cyclic environment
-  override def infix = e1.infix + "@" + (env keys).mkString("{", ",", "}")
-  override def toString = "Clo(" + e1 + ", " + (env keys).mkString("{", ",", "}") + ")"
+  override def infix = Fun(fargs, body).infix + "@" + (env keys).mkString("{", ",", "}")
+  override def toString = "Clo(" + fargs + ", " + body + ", " + (env keys).mkString("{", ",", "}") + ")"
 }
 
 case class App(fexp: Ex, args: List[Ex]) extends Ex {
   def eval(env: Env) = {
-    val _@ Clo(Fun(fargs, body), fenv) = fexp eval env
+    val _@ Clo(fargs, body, fenv) = fexp eval env
     val actarg = args map (_ eval env)
     val env2 = fenv ++ Map(fargs zip actarg: _*)
     body eval env2
   }
   def infix = (fexp match {
-    case Fun(_, _) | Clo(Fun(_, _), _) => "(" + fexp.infix + ")"
-    case _                             => fexp.infix
+    case Var(_) => fexp.infix
+    case _      => "(" + fexp.infix + ")"
   }) + (args map (_ infix)).mkString("(", ", ", ")");
 }
 
@@ -112,7 +112,7 @@ case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
     letrecenv ++= fargs zip actarg
     body eval letrecenv
   }
-  def infix = "let* " + (fargs zip (args map ((x) => x.infix))).mkString("; ") + " in " + body.infix
+  def infix = "let* " + ((fargs zip args) map (p => { val (a, e) = p; a + "=" + e.infix })).mkString ("; ") + " in " + body.infix
 }
 
 // For the REPL we use a mutable Map so we can dynamically add and remove function defs
@@ -122,6 +122,6 @@ case class Def(n: String, e: Ex) extends Ex {
 }
 
 case class Undef(n: String) extends Ex {
-  def eval(env: Env): Const = ReplUnDef(n) 
+  def eval(env: Env): Const = ReplUnDef(n)
   def infix = "undef " + n;
 }
