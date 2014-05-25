@@ -8,8 +8,9 @@ import Ex.Env
 
 abstract class Const extends Ex {
   override def eval(e: Env): Const = this
-  private def undef(op: String, c: Const): Const = throw new UndefinedOperationException("Undefined operation " + this + op + c)
-  private def undef(op: String): Const = throw new UndefinedOperationException("Undefined operation " + op + " " + this)
+  protected def undef(op: String, c: Const): Nothing = throw new UndefinedOperationException("Undefined operation " + this + op + c)
+  protected def undef(op: String): Nothing = throw new UndefinedOperationException("Undefined operation " + op + " " + this)
+  def unary_- : Const = undef("-")
   def +(c: Const): Const = undef("+", c);
   def -(c: Const): Const = undef("-", c)
   def *(c: Const): Const = undef("*", c)
@@ -21,10 +22,9 @@ abstract class Const extends Ex {
   def <=(c: Const): Const = undef("<=", c)
   def >(c: Const): Const = undef(">", c)
   def >=(c: Const): Const = undef(">=", c)
+  def unary_! : Const = undef("not")
   def &&(c: Const): Const = undef("and", c)
   def ||(c: Const): Const = undef("or", c)
-  def unary_! : Const = undef("not")
-  def unary_- : Const = undef("-")
   protected final def pow(b: BigInt, ex: BigInt): BigInt =
     if (ex < 0) {
       require(b != 0)
@@ -48,7 +48,9 @@ abstract class Const extends Ex {
     else if (y < 0) -gcd(x, -y)
     else gcd(y % x, x)
   }
-  def mkBool(b: Boolean): Const = if (b) True else False
+//  protected def mkBool(b: Boolean): Const = if (b) True else False
+  protected implicit def booleanToConst(b: Boolean): Const =  if (b) True else False
+  protected implicit def bigintToConst(b: BigInt): Const = Z(b)
 }
 
 // For the REPL - to return a modified environment

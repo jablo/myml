@@ -9,6 +9,7 @@ import Assert._
 import Sculla.calc
 import Sculla.e
 import Sculla.check
+import Sculla.reparse
 
 class BoolExpressionTest {
   @Before
@@ -24,9 +25,11 @@ class BoolExpressionTest {
     val p = check(calc.parseAll(calc.expr, "true"))
     assertEquals(True, p.get);
     assertEquals(True, p.get.eval(e))
+    assertEquals(p.get, reparse(p))
     val p2 = check(calc.parseAll(calc.expr, "false"))
     assertEquals(False, p2.get);
     assertEquals(False, p2.get.eval(e))
+    assertEquals(p2.get, reparse(p2))
   }
 
   @Test
@@ -34,6 +37,7 @@ class BoolExpressionTest {
     val p = check(calc.parseAll(calc.expr, "true and true"))
     assertEquals(And(True, True), p.get);
     assertEquals(True, p.get.eval(e))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -41,6 +45,7 @@ class BoolExpressionTest {
     val p = check(calc.parseAll(calc.expr, "true and false"))
     assertEquals(And(True, False), p.get);
     assertEquals(False, p.get.eval(e))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -48,6 +53,7 @@ class BoolExpressionTest {
     val p = check(calc.parseAll(calc.expr, "false or true and true"))
     assertEquals(Or(False, And(True, True)), p.get);
     assertEquals(True, p.get.eval(e))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -55,6 +61,7 @@ class BoolExpressionTest {
     val p = check(calc.parseAll(calc.expr, "not false"))
     assertEquals(Not(False), p.get);
     assertEquals(True, p.get.eval(e))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -62,6 +69,7 @@ class BoolExpressionTest {
     val p = check(calc.parseAll(calc.expr, "not false and true"))
     assertEquals(And(Not(False), True), p.get);
     assertEquals(True, p.get.eval(e))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -69,5 +77,6 @@ class BoolExpressionTest {
     val p = check(calc.parseAll(calc.expr, "not (true or false)"))
     assertEquals(Not(Par(Or(True, False))), p.get);
     assertEquals(False, p.get.eval(e))
+    assertEquals(p.get, reparse(p))
   }
 }

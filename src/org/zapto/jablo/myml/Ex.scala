@@ -12,7 +12,7 @@ import Ex.Env;
  * <li>infix method like toString, but tries to generate an infix notation of the program that could be re-parsed
  * </ul>
  */
-abstract class Ex {
+trait Ex {
   def eval(e: Env): Const
   def infix: String
 }

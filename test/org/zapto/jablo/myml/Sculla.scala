@@ -15,4 +15,5 @@ object Sculla {
     }
     p
   }
+  def reparse(p: calc.ParseResult[Ex]): Ex = check(calc.parseAll(calc.expr, p.get.infix)).get
 }

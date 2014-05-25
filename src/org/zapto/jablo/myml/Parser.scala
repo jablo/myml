@@ -47,7 +47,7 @@ class Parser extends JavaTokenParsers with PackratParsers {
   // Arithmetic expressions
   lazy val arith: ExPar = cmp
 
-  lazy val cmp: ExPar = cmp ~ cmpop ~ cmp ^^ {
+  lazy val cmp: ExPar = sum ~ cmpop ~ sum ^^ {
     case a ~ op ~ b => op.mkEx(a, b)
   } | boolsum
 

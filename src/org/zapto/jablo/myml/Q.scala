@@ -32,33 +32,33 @@ case class Q(n: BigInt, d: BigInt) extends Const {
   }
 
   override def ==(c: Const): Const = c match {
-    case Z(j)        => mkBool(equals(Q(j, 1)))
-    case c @ Q(_, _) => mkBool(equals(c))
+    case Z(j)        => equals(Q(j, 1))
+    case c @ Q(_, _) => equals(c)
     case _           => throw new TypeErrorException("Expected Z or Q " + c)
   }
   override def !=(c: Const): Const = c match {
-    case Z(j)        => mkBool(!equals(Q(j, 1)))
-    case c @ Q(n, d) => mkBool(!equals(c))
+    case Z(j)        => !equals(Q(j, 1))
+    case c @ Q(n, d) => !equals(c)
     case _           => throw new TypeErrorException("Expected Z or Q " + c)
   }
   override def <(c: Const): Const = c match {
-    case Z(j)          => mkBool(n * 1 < j * d)
-    case c @ Q(n1, d1) => mkBool(n * d1 < n1 * d)
+    case Z(j)          => n * 1 < j * d
+    case c @ Q(n1, d1) => n * d1 < n1 * d
     case _             => throw new TypeErrorException("Expected Z or Q " + c)
   }
   override def <=(c: Const): Const = c match {
-    case Z(j)          => mkBool(n * 1 <= j * d)
-    case c @ Q(n1, d1) => mkBool(n * d1 <= n1 * d)
+    case Z(j)          => n * 1 <= j * d
+    case c @ Q(n1, d1) => n * d1 <= n1 * d
     case _             => throw new TypeErrorException("Expected Z or Q " + c)
   }
   override def >(c: Const): Const = c match {
-    case Z(j)          => mkBool(n * 1 > j * d)
-    case c @ Q(n1, d1) => mkBool(n * d1 > n1 * d)
+    case Z(j)          => n * 1 > j * d
+    case c @ Q(n1, d1) => n * d1 > n1 * d
     case _             => throw new TypeErrorException("Expected Z or Q " + c)
   }
   override def >=(c: Const): Const = c match {
-    case Z(j)          => mkBool(n * 1 >= j * d)
-    case c @ Q(n1, d1) => mkBool(n * d1 >= n1 * d)
+    case Z(j)          => n * 1 >= j * d
+    case c @ Q(n1, d1) => n * d1 >= n1 * d
     case _             => throw new TypeErrorException("Expected Z or Q " + c)
   }
 

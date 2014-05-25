@@ -9,6 +9,7 @@ import Assert._
 import Sculla.calc
 import Sculla.e
 import Sculla.check
+import Sculla.reparse
 
 class CmpExpressionTest {
   @Before
@@ -24,6 +25,7 @@ class CmpExpressionTest {
     val p = check(calc.parseAll(calc.expr, "1 < 2"))
     assertEquals(Lt(Z(1), Z(2)), p.get);
     assertEquals(True, p.get.eval(e))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -31,6 +33,7 @@ class CmpExpressionTest {
     val p = check(calc.parseAll(calc.expr, "1 > 2"))
     assertEquals(Gt(Z(1), Z(2)), p.get);
     assertEquals(False, p.get.eval(e))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -38,6 +41,7 @@ class CmpExpressionTest {
     val p = check(calc.parseAll(calc.expr, "1 <= 2"))
     assertEquals(Lte(Z(1), Z(2)), p.get);
     assertEquals(True, p.get.eval(e))
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -45,6 +49,7 @@ class CmpExpressionTest {
     val p = check(calc.parseAll(calc.expr, "2/3 = 4/6"))
     assertEquals(Equ(Q(2, 3), Q(4, 6)), p.get)
     assertEquals(True, p.get eval e)
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -52,6 +57,7 @@ class CmpExpressionTest {
     val p = check(calc.parseAll(calc.expr, "2/3 <> 4/6"))
     assertEquals(Neq(Q(2, 3), Q(4, 6)), p.get)
     assertEquals(False, p.get eval e)
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -59,6 +65,7 @@ class CmpExpressionTest {
     val p = check(calc.parseAll(calc.expr, "2/3 <= 4/5"))
     assertEquals(Lte(Q(2, 3), Q(4, 5)), p.get)
     assertEquals(True, p.get eval e)
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -66,6 +73,7 @@ class CmpExpressionTest {
     val p = check(calc.parseAll(calc.expr, "0/3 <= 0/5"))
     assertEquals(Lte(Q(0, 3), Q(0, 5)), p.get)
     assertEquals(True, p.get eval e)
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -73,6 +81,7 @@ class CmpExpressionTest {
     val p = check(calc.parseAll(calc.expr, "2 = 8/4"))
     assertEquals(Equ(Z(2), Q(8, 4)), p.get)
     assertEquals(True, p.get eval e)
+    assertEquals(p.get, reparse(p))
   }
 
   @Test
@@ -80,5 +89,6 @@ class CmpExpressionTest {
     val p = check(calc.parseAll(calc.expr, "3/2 <= 8"))
     assertEquals(Lte(Q(3, 2), Z(8)), p.get)
     assertEquals(True, p.get eval e)
+    assertEquals(p.get, reparse(p))
   }
 }

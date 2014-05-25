@@ -24,38 +24,38 @@ case class Z(i: BigInt) extends Const {
   }
   override def **(c: Const): Const = c match {
     case Z(j) => Z(pow(i, j))
-    case _    => throw new RuntimeException("Power only supported for whole numbers")
+    case _    => undef("^", c)
   }
   // comparison operations
   override def ==(c: Const): Const = c match {
-    case Z(j)        => mkBool(i == j)
+    case Z(j)        => i == j
     case c @ Q(n, d) => Q(i, 1) == c
-    case _           => mkBool(false)
+    case _           => false
   }
   override def !=(c: Const): Const = c match {
-    case Z(j)        => mkBool(i != j)
+    case Z(j)        => i != j
     case c @ Q(n, d) => Q(i, 1) != c
-    case _           => mkBool(true)
+    case _           => true
   }
   override def <(c: Const): Const = c match {
-    case Z(j)        => mkBool(i < j)
+    case Z(j)        => i < j
     case c @ Q(n, d) => Q(i, 1) < c
-    case _           => mkBool(false)
+    case _           => false
   }
   override def <=(c: Const): Const = c match {
-    case Z(j)        => mkBool(i <= j)
+    case Z(j)        => i <= j
     case c @ Q(n, d) => Q(i, 1) <= c
-    case _           => mkBool(false)
+    case _           => false
   }
   override def >(c: Const): Const = c match {
-    case Z(j)        => mkBool(i > j)
+    case Z(j)        => i > j
     case c @ Q(n, d) => Q(i, 1) > c
-    case _           => mkBool(false)
+    case _           => false
   }
   override def >=(c: Const): Const = c match {
-    case Z(j)        => mkBool(i >= j)
+    case Z(j)        => i >= j
     case c @ Q(n, d) => Q(i, 1) >= c
-    case _           => mkBool(false)
+    case _           => false
   }
   override def infix = i.toString
 }
