@@ -4,6 +4,8 @@
 
 package org.zapto.jablo.myml
 
+import Const.pow
+
 case class Z(i: BigInt) extends Const {
   override def unary_- : Const = Z(-i)
   override def +(c: Const): Const = c match {

@@ -28,4 +28,15 @@ class RatExpressionTest {
     assertEquals(p.get, reparse(p))
   }
 
+  @Test
+  def ratTest2 = {
+    val p = check(calc.parseAll(calc.expr, "2/3+4/5+6/7+8/9"))
+    println("ratTets2 - parse: "+ p.get)
+    println("         - infix: "+ p.get.infix)
+    val ev = p.get.eval(Map())
+    println("         - ev   : "+ ev)
+    println("         - evinf: "+ ev.infix)
+  }
+
+
 }
