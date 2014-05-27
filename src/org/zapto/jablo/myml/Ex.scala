@@ -16,7 +16,8 @@ import scala.collection._
 abstract class Ex {
   def eval(e: Env): Const
   def infix: String
-  protected def typerr(s: String, e: Ex): Nothing = throw new TypeErrorException("Expected " + s + " expression: " + e.infix)
+  protected def typerr(s: String, e: Ex): Nothing = throw new TypeErrorException(s + " in: " + e.infix)
+  protected def err(s: String, e: Ex): Nothing = throw new MyMLException(s + " " + e.infix)
 }
 
 object Ex {
@@ -29,7 +30,10 @@ class TypeErrorException(msg: String = null, cause: Throwable = null) extends My
 class UndefinedOperationException(msg: String = null, cause: Throwable = null) extends MyMLException(msg, cause) {}
 
 case class Var(n: String) extends Ex {
-  override def eval(e: Env): Const = e(n) // 
+  override def eval(e: Env): Const = e get n  match {
+    case None => err("Unknown variable", this)
+    case Some(v) => v eval e
+  }
   override def infix = n
 }
 
@@ -68,6 +72,10 @@ case class Not(e1: Ex) extends Un(e1, ONot)
 case class And(e1: Ex, e2: Ex) extends Bin(e1, e2, OAnd)
 case class Or(e1: Ex, e2: Ex) extends Bin(e1, e2, OOr)
 
+case class Cons(e1: Ex, e2: Ex) extends Bin(e1, e2, OCons)
+case class Car(e1: Ex) extends Un(e1, OCar)
+case class Cdr(e1: Ex) extends Un(e1, OCdr)
+
 case class Ife(e1: Ex, e2: Ex, e3: Ex) extends Ex {
   def eval(e: Env) = {
     val test = e1 eval e
@@ -93,15 +101,19 @@ case class Clo(fargs: List[String], body: Ex, env: Env) extends Const {
 
 case class App(fexp: Ex, args: List[Ex]) extends Ex {
   def eval(env: Env) = {
-    val _@ Clo(fargs, body, fenv) = fexp eval env
-    val actarg = args map (_ eval env)
-    val env2 = fenv ++ Map(fargs zip actarg: _*)
-    body eval env2
+    val fun = fexp eval env
+    fun match {
+      case _@ Clo(fargs, body, fenv) =>
+        val actarg = args map (_ eval env)
+        val env2 = fenv ++ Map(fargs zip actarg: _*)
+        body eval env2
+      case _ => typerr("Not a function", fexp)
+    }
   }
   def infix = (fexp match {
-    case Var(_) => fexp.infix
-    case _      => "(" + fexp.infix + ")"
-  }) + (args map (_ infix)).mkString("(", ", ", ")");
+      case Var(_) => fexp.infix
+      case _      => "(" + fexp.infix + ")"
+    }) + (args map (_ infix)).mkString("(", ", ", ")");
 }
 
 case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
@@ -112,7 +124,7 @@ case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
     letrecenv ++= fargs zip actarg
     body eval letrecenv
   }
-  def infix = "let* " + ((fargs zip args) map (p => { val (a, e) = p; a + "=" + e.infix })).mkString ("; ") + " in " + body.infix
+  def infix = "let* " + ((fargs zip args) map (p => { val (a, e) = p; a + "=" + e.infix })).mkString("; ") + " in " + body.infix
 }
 
 // For the REPL we use a mutable Map so we can dynamically add and remove function defs

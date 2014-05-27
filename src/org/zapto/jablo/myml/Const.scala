@@ -55,6 +55,35 @@ object Const {
   }
 }
 
+// For list representation
+case object Nil extends Const {
+  override def infix: String = "nil"
+  override def ==(c: Const): Const = c match {
+    case Nil            => True
+    case ConsCell(_, _) => False
+    case _              => undef("=", c)
+  }
+  override def !=(c: Const): Const = c match {
+    case Nil            => False
+    case ConsCell(_, _) => True
+    case _              => undef("<>", c)
+  }
+}
+
+case class ConsCell(c1: Const, c2: Const) extends Const {
+  override def infix: String = c1.infix + "::" + c2.infix
+  override def ==(c: Const): Const = c match {
+    case Nil            => False
+    case ConsCell(a, b) => c1 == a && c2 == b
+    case _              => undef("=", c)
+  }
+  override def !=(c: Const): Const = c match {
+    case Nil            => True
+    case ConsCell(a, b) => c1 != a || c2 != b
+    case _              => undef("<>", c)
+  }
+}
+
 // For the REPL - to return a modified environment
 case class ReplDef(n: String, c: Const) extends Const {
   override def infix = "define " + n + "=" + c

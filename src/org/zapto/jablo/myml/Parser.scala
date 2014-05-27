@@ -6,14 +6,17 @@ package org.zapto.jablo.myml
 
 import scala.util.parsing.combinator.PackratParsers
 import scala.util.parsing.combinator._
+import Q.q
 
 class Parser extends JavaTokenParsers with PackratParsers {
   type ExPar = PackratParser[Ex]
   type OpPar = PackratParser[Op]
   type UnOpPar = PackratParser[UnOp]
   type EqPar = PackratParser[(String, Ex)]
+  type ProgPar = PackratParser[List[Ex]]
 
   // The MyML language parser
+  lazy val program: ProgPar = repsep(repl, ";")
   lazy val expr: ExPar = cond | fun | let | letr | arith
 
   // REPL commands
@@ -43,6 +46,8 @@ class Parser extends JavaTokenParsers with PackratParsers {
   lazy val assign: EqPar = ident ~ ("=" ~> expr) ^^ {
     case v ~ e => (v, e)
   }
+  lazy val listfun = "car" ~ "(" ~> expr <~ ")" ^^ (Car) |
+    "cdr" ~ "(" ~> expr <~ ")" ^^ (Cdr)
 
   // Arithmetic expressions
   lazy val arith: ExPar = cmp
@@ -59,8 +64,11 @@ class Parser extends JavaTokenParsers with PackratParsers {
   } | boolun
   lazy val boolun: ExPar = notop ~ boolun ^^ {
     case op ~ e => op.mkEx(e)
-  } | sum
+  } | listop
 
+  lazy val listop: ExPar = listop ~ ("::" ~> listop) ^^ {
+    case e1 ~ e2 => Cons(e1, e2)
+  } | sum
   lazy val sum: ExPar = sum ~ sumop ~ product ^^ {
     case e1 ~ op ~ e2 => op.mkEx(e1, e2)
   } | product
@@ -74,11 +82,11 @@ class Parser extends JavaTokenParsers with PackratParsers {
     case op ~ e => op.mkEx(e)
   } | term
   lazy val term: ExPar = app | num | variable | pexpr
-  lazy val app: ExPar = (app | variable | pexpr2) ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
+  lazy val app: ExPar = listfun | (app | variable | pexpr2) ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
     case fn ~ args => App(fn, args)
   }
   lazy val pexpr: ExPar = "(" ~> expr <~ ")" ^^ ((f) => Par(f))
-  lazy val pexpr2: ExPar = "(" ~> expr <~ ")" 
+  lazy val pexpr2: ExPar = "(" ~> expr <~ ")"
 
   // Comparison Operator terminals
   lazy val cmpop: OpPar = "<>" ^^ ((_) => ONe) | ">=" ^^ ((_) => OGe) | "<=" ^^ ((_) => OLe) |
@@ -97,9 +105,10 @@ class Parser extends JavaTokenParsers with PackratParsers {
 
   // Terminals
   lazy val num: ExPar = wholeNumber ~ ("/" ~> wholeNumber) ^^ {
-    case n ~ d => Q(BigInt(n), BigInt(d))
+    case n ~ d => q(BigInt(n), BigInt(d))
   } |
     wholeNumber ^^ ((p) => Z(BigInt(p))) |
-    "true" ^^ ((_) => True) | "false" ^^ ((_) => False)
+    "true" ^^ ((_) => True) | "false" ^^ ((_) => False) | "nil" ^^ ((_) => Nil)
+
   lazy val variable: ExPar = ident ^^ ((p) => Var(p))
 }
