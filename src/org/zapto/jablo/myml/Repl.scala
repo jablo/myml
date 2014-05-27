@@ -27,11 +27,16 @@ object Repl {
     }
     p
   }
-
-  
   
   def readfile(n: String): Unit = {
     val p: calc.ParseResult[List[Ex]] = calc.parseAll(calc.program, new FileReader(n))    
+    check2(p)
+    p.get map (ep(_, env))
+  }
+
+  def readresource(n: String): Unit = {
+    val preload = Source.fromURL(getClass.getResource(n))
+    val p: calc.ParseResult[List[Ex]] = calc.parseAll(calc.program, preload.bufferedReader)    
     check2(p)
     p.get map (ep(_, env))
   }
@@ -46,6 +51,7 @@ object Repl {
       ev match {
         case ReplDef(n, c) => env += Pair(n, c)
         case ReplUnDef(n)  => env -= n
+        case ReplLoad(n)   => readfile(n)
         case _             => Unit
       }
     } catch {
@@ -71,7 +77,7 @@ object Repl {
    * @param args the command line arguments
    */
   def main(args: Array[String]): Unit = {
-    readfile("/home/jablo/preamble.myml")
+    readresource("preload.myml")
     repl
   }
 }

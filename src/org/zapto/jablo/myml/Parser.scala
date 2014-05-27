@@ -22,6 +22,7 @@ class Parser extends JavaTokenParsers with PackratParsers {
   // REPL commands
   lazy val repl: ExPar = "def" ~> assign ^^ ((p) => { val (a, b) = p; Def(a, b) }) |
     "undef" ~> ident ^^ ((p) => Undef(p)) |
+    "load" ~> stringLiteral ^^ ((p)=>Load(p drop(1) dropRight(1))) |
     expr
 
   // Control structures
@@ -46,8 +47,11 @@ class Parser extends JavaTokenParsers with PackratParsers {
   lazy val assign: EqPar = ident ~ ("=" ~> expr) ^^ {
     case v ~ e => (v, e)
   }
-  lazy val listfun = "car" ~ "(" ~> expr <~ ")" ^^ (Car) |
-    "cdr" ~ "(" ~> expr <~ ")" ^^ (Cdr)
+  lazy val bifun: ExPar = "car" ~ "(" ~> expr <~ ")" ^^ (Car) | "cdr" ~ "(" ~> expr <~ ")" ^^ (Cdr) |
+    "substr" ~ "(" ~> repN(3, expr) <~ ")" ^^ { case List(e1, e2, e3) => SubStr(e1, e2, e3) } |
+    "strlen" ~ "(" ~> expr <~ ")" ^^ (StrLen) |
+    "tostr"  ~ "(" ~> expr <~ ")" ^^ (ToStr) |
+    "trim" ~ "(" ~> expr <~ ")" ^^ (TrimStr)
 
   // Arithmetic expressions
   lazy val arith: ExPar = cmp
@@ -82,7 +86,7 @@ class Parser extends JavaTokenParsers with PackratParsers {
     case op ~ e => op.mkEx(e)
   } | term
   lazy val term: ExPar = app | num | variable | pexpr
-  lazy val app: ExPar = listfun | (app | variable | pexpr2) ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
+  lazy val app: ExPar = bifun | (app | variable | pexpr2) ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
     case fn ~ args => App(fn, args)
   }
   lazy val pexpr: ExPar = "(" ~> expr <~ ")" ^^ ((f) => Par(f))
@@ -104,11 +108,9 @@ class Parser extends JavaTokenParsers with PackratParsers {
   lazy val notop: UnOpPar = "not" ^^ ((_) => ONot)
 
   // Terminals
-  lazy val num: ExPar = wholeNumber ~ ("/" ~> wholeNumber) ^^ {
-    case n ~ d => q(BigInt(n), BigInt(d))
-  } |
+  lazy val num: ExPar = wholeNumber ~ ("/" ~> wholeNumber) ^^ { case n ~ d => q(BigInt(n), BigInt(d)) } |
     wholeNumber ^^ ((p) => Z(BigInt(p))) |
-    "true" ^^ ((_) => True) | "false" ^^ ((_) => False) | "nil" ^^ ((_) => Nil)
+    "true" ^^ ((_) => True) | "false" ^^ ((_) => False) | "nil" ^^ ((_) => Nil) | stringLiteral ^^ Str
 
   lazy val variable: ExPar = ident ^^ ((p) => Var(p))
 }

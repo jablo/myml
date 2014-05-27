@@ -27,6 +27,7 @@ abstract class Const extends Ex {
   def ||(c: Const): Const = undef("or", c)
   protected implicit def booleanToConst(b: Boolean): Const = if (b) True else False
   protected implicit def bigintToConst(b: BigInt): Const = Z(b)
+  protected implicit def stringToConst(s: String): Const = Str(s)
 }
 
 object Const {
@@ -71,7 +72,10 @@ case object Nil extends Const {
 }
 
 case class ConsCell(c1: Const, c2: Const) extends Const {
-  override def infix: String = c1.infix + "::" + c2.infix
+  override def infix: String = c1 match {
+    case ConsCell(c11,_) => "[" + c1.infix + "]" + "::" + c2.infix
+    case _ => c1.infix + "::" + c2.infix
+  }
   override def ==(c: Const): Const = c match {
     case Nil            => False
     case ConsCell(a, b) => c1 == a && c2 == b
@@ -84,6 +88,38 @@ case class ConsCell(c1: Const, c2: Const) extends Const {
   }
 }
 
+case class Str(s: String) extends Const {
+  override def infix: String = s
+  override def +(c: Const): Const = c match {
+    case Str(t) => Str(s + t)
+    case _      => undef("+", c)
+  }
+  override def ==(c: Const): Const = c match {
+    case Str(t) => s == t
+    case _      => undef("=", c)
+  }
+  override def !=(c: Const): Const = c match {
+    case Str(t) => s != t
+    case _      => undef("<>", c)
+  }
+  override def <(c: Const): Const = c match {
+    case Str(t) => s < t
+    case _      => undef("<", c)
+  }
+  override def <=(c: Const): Const = c match {
+    case Str(t) => s <= t
+    case _      => undef("<=", c)
+  }
+  override def >(c: Const): Const = c match {
+    case Str(t) => s > t
+    case _      => undef(">", c)
+  }
+  override def >=(c: Const): Const = c match {
+    case Str(t) => s >= t
+    case _      => undef(">=", c)
+  }
+}
+
 // For the REPL - to return a modified environment
 case class ReplDef(n: String, c: Const) extends Const {
   override def infix = "define " + n + "=" + c
@@ -93,3 +129,6 @@ case class ReplUnDef(n: String) extends Const {
   override def infix = "undefine: " + n
 }
 
+case class ReplLoad(n: String) extends Const {
+  override def infix = "load " + n
+}

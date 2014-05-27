@@ -76,6 +76,43 @@ case class Cons(e1: Ex, e2: Ex) extends Bin(e1, e2, OCons)
 case class Car(e1: Ex) extends Un(e1, OCar)
 case class Cdr(e1: Ex) extends Un(e1, OCdr)
 
+case class SubStr(e1: Ex, e2: Ex, e3: Ex) extends Ex {
+  def eval(e: Env) = {
+    val e1v = e1 eval e
+    val e2v = e2 eval e
+    val e3v = e3 eval e    
+    (e1v, e2v, e3v) match {
+      case (Str(s),Z(a),Z(b))  => Str(s.substring(a.intValue, b.intValue))
+      case _     => typerr("string-Z-Z", Cons(e1,Cons(e2,Cons(e3, Nil))))
+    }
+  }
+  def infix = "sub(" + e1 + ", " + e2 + ", " + e3 + ")"
+}
+case class TrimStr(e1: Ex) extends Ex {
+  def eval(e: Env) = {
+    val e1v = e1 eval e
+    e1v match {
+      case Str(s)  => Str(s.trim)
+      case _     => typerr("string", e1)
+    }
+  }
+  def infix = "trim(" + e1 + ")"
+}
+case class StrLen(e1: Ex) extends Ex {
+  def eval(e: Env) = {
+    val e1v = e1 eval e
+    e1v match {
+      case Str(s)  => Z(s.length)
+      case _     => typerr("string", e1)
+    }
+  }
+  def infix = "strlen(" + e1 + ")"
+}
+case class ToStr(e1: Ex) extends Ex {
+  def eval(e: Env) = Str(e1 eval e infix)
+  def infix = "tostr(" + e1 + ")"
+}
+
 case class Ife(e1: Ex, e2: Ex, e3: Ex) extends Ex {
   def eval(e: Env) = {
     val test = e1 eval e
@@ -127,7 +164,7 @@ case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
   def infix = "let* " + ((fargs zip args) map (p => { val (a, e) = p; a + "=" + e.infix })).mkString("; ") + " in " + body.infix
 }
 
-// For the REPL we use a mutable Map so we can dynamically add and remove function defs
+// For the REPL 
 case class Def(n: String, e: Ex) extends Ex {
   def eval(env: Env): Const = ReplDef(n, e eval env)
   def infix = "def " + n + "=" + e.infix
@@ -136,4 +173,9 @@ case class Def(n: String, e: Ex) extends Ex {
 case class Undef(n: String) extends Ex {
   def eval(env: Env): Const = ReplUnDef(n)
   def infix = "undef " + n;
+}
+
+case class Load(n: String) extends Ex {
+  def eval(env: Env): Const = ReplLoad(n)
+  def infix = "load " + n;
 }

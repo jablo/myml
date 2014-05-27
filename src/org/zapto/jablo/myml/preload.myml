@@ -1,0 +1,44 @@
+
+def Y  = fun(fu) => (fun(recur) => recur(recur)) (fun(recur) => fun(x) => fu(recur(recur))(x));
+
+def fac = fun(n) => 
+    let* fac2 = fun(n,acc) => if n=0 then acc else fac2(n-1, n*acc)
+    in fac2(n,1);
+
+def len = fun(l) => 
+    let* len2 = fun(l, acc) => if l=nil then acc else len2(cdr(l),acc+1)
+    in len2(l, 0);
+
+def reverse = fun (l) => 
+    let* helper = fun (l, a) =>
+         if l = nil then a else 
+            let h = car(l); t=cdr(l)
+            in helper(t,h::a)
+    in helper(l,nil);
+
+def map = fun (l,f) =>
+    let* map2 = fun (l,acc) =>
+         if l = nil then reverse(acc) else
+            let h = car(l); t=cdr(l)
+            in map2(t,f(h)::acc)
+    in map2(l,nil);
+
+def fold = fun (l,f,z) =>
+         let* fold2 = fun(l,acc) =>
+              if l = nil then acc else 
+              let h=car(l); t=cdr(l)
+              in fold2(t,f(acc,h))
+         in fold2(l,z);
+
+def fold1 = fun (l,f) => if l=nil then nil else fold(l,f,car(l));
+
+def fibs = fun (n) =>
+    let* fibs2 = fun (n,acc) =>
+         if n=0 then acc else
+            let f1=car(acc); f2=car(cdr(acc))
+            in fibs2(n-1,f1+f2::acc)
+    in fibs2(n,1::0::nil);
+
+def l=map(fibs(5),fibs);
+
+def last = 1
