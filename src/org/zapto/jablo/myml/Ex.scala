@@ -6,6 +6,7 @@ package org.zapto.jablo.myml
 
 import Ex.Env
 import scala.collection._
+import scala.annotation.tailrec
 
 /**
  * Expressions
@@ -16,8 +17,8 @@ import scala.collection._
 abstract class Ex {
   def eval(e: Env): Const
   def infix: String
-  protected def typerr(s: String, e: Ex): Nothing = throw new TypeErrorException(s + " in: " + e.infix)
-  protected def err(s: String, e: Ex): Nothing = throw new MyMLException(s + " " + e.infix)
+  protected final def typerr(s: String, e: Ex): Nothing = throw new TypeErrorException(s + " in: " + e.infix)
+  protected final def err(s: String, e: Ex): Nothing = throw new MyMLException(s + " " + e.infix)
 }
 
 object Ex {
@@ -30,8 +31,8 @@ class TypeErrorException(msg: String = null, cause: Throwable = null) extends My
 class UndefinedOperationException(msg: String = null, cause: Throwable = null) extends MyMLException(msg, cause) {}
 
 case class Var(n: String) extends Ex {
-  override def eval(e: Env): Const = e get n  match {
-    case None => err("Unknown variable", this)
+  override def eval(e: Env): Const = e get n match {
+    case None    => err("Unknown variable", this)
     case Some(v) => v eval e
   }
   override def infix = n
@@ -80,10 +81,10 @@ case class SubStr(e1: Ex, e2: Ex, e3: Ex) extends Ex {
   def eval(e: Env) = {
     val e1v = e1 eval e
     val e2v = e2 eval e
-    val e3v = e3 eval e    
+    val e3v = e3 eval e
     (e1v, e2v, e3v) match {
-      case (Str(s),Z(a),Z(b))  => Str(s.substring(a.intValue, b.intValue))
-      case _     => typerr("string-Z-Z", Cons(e1,Cons(e2,Cons(e3, Nil))))
+      case (Str(s), Z(a), Z(b)) => Str(s.substring(a.intValue, b.intValue))
+      case _                    => typerr("string-Z-Z", Cons(e1, Cons(e2, Cons(e3, Nil))))
     }
   }
   def infix = "sub(" + e1 + ", " + e2 + ", " + e3 + ")"
@@ -92,8 +93,8 @@ case class TrimStr(e1: Ex) extends Ex {
   def eval(e: Env) = {
     val e1v = e1 eval e
     e1v match {
-      case Str(s)  => Str(s.trim)
-      case _     => typerr("string", e1)
+      case Str(s) => Str(s.trim)
+      case _      => typerr("string", e1)
     }
   }
   def infix = "trim(" + e1 + ")"
@@ -102,8 +103,8 @@ case class StrLen(e1: Ex) extends Ex {
   def eval(e: Env) = {
     val e1v = e1 eval e
     e1v match {
-      case Str(s)  => Z(s.length)
-      case _     => typerr("string", e1)
+      case Str(s) => Z(s.length)
+      case _      => typerr("string", e1)
     }
   }
   def infix = "strlen(" + e1 + ")"
@@ -137,7 +138,8 @@ case class Clo(fargs: List[String], body: Ex, env: Env) extends Const {
 }
 
 case class App(fexp: Ex, args: List[Ex]) extends Ex {
-  def eval(env: Env) = {
+  @tailrec
+  final def eval(env: Env) = {
     val fun = fexp eval env
     fun match {
       case _@ Clo(fargs, body, fenv) =>
@@ -148,9 +150,9 @@ case class App(fexp: Ex, args: List[Ex]) extends Ex {
     }
   }
   def infix = (fexp match {
-      case Var(_) => fexp.infix
-      case _      => "(" + fexp.infix + ")"
-    }) + (args map (_ infix)).mkString("(", ", ", ")");
+    case Var(_) => fexp.infix
+    case _      => "(" + fexp.infix + ")"
+  }) + (args map (_ infix)).mkString("(", ", ", ")");
 }
 
 case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
