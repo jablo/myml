@@ -7,6 +7,7 @@ package org.zapto.jablo.myml
 import Ex.Env
 import scala.collection._
 import scala.annotation.tailrec
+import Ex.interp
 
 /**
  * Expressions
@@ -15,44 +16,61 @@ import scala.annotation.tailrec
  * </ul>
  */
 abstract class Ex {
-  def eval(e: Env): Const
+  def eval(e: Env): Const = interp(this, e)
+  def step(e: Env): EvalStep
   def infix: String
   protected final def typerr(s: String, e: Ex): Nothing = throw new TypeErrorException(s + " in: " + e.infix)
   protected final def err(s: String, e: Ex): Nothing = throw new MyMLException(s + " " + e.infix)
+  protected implicit def booleanToConst(b: Boolean): Const = if (b) True else False
+  protected implicit def bigintToConst(b: BigInt): Const = Z(b)
+  protected implicit def stringToConst(s: String): Const = Str(s)
+  protected implicit def constToEvalStep(c: Const): EvalStep = Done(c)
 }
 
 object Ex {
   // We mix mutable and immutable maps, so we have to be explicit about using the generic Map interface for environments
   type Env = scala.collection.Map[String, Const]
+
+  @tailrec
+  final def interp(e: Ex, env: Env): Const = {
+    e step env match {
+      case Done(r)        => r
+      case Next(e1, env1) => interp(e1, env1)
+    }
+  }
 }
+
+abstract sealed class EvalStep
+case class Done(r: Const) extends EvalStep
+case class Next(e: Ex, env: Env) extends EvalStep
 
 class MyMLException(msg: String = null, cause: Throwable = null) extends java.lang.Exception(msg, cause) {}
 class TypeErrorException(msg: String = null, cause: Throwable = null) extends MyMLException(msg, cause) {}
 class UndefinedOperationException(msg: String = null, cause: Throwable = null) extends MyMLException(msg, cause) {}
 
 case class Var(n: String) extends Ex {
-  override def eval(e: Env): Const = e get n match {
+  override def step(e: Env): EvalStep = e get n match {
     case None    => err("Unknown variable", this)
-    case Some(v) => v eval e
+    case Some(v) => Next(v, e)
   }
   override def infix = n
 }
 
 case class Par(e: Ex) extends Ex {
-  override def eval(en: Env): Const = e eval en
+  override def step(en: Env): EvalStep = Next(e, en)
   override def infix = "(" + e.infix + ")"
 }
 
 // Unary operator
 abstract class Un(e1: Ex, op: UnOp) extends Ex {
+  override def step(e: Env): EvalStep = op.eval(interp(e1, e))
   override def infix = op.infix + e1.infix
-  override def eval(e: Env): Const = op.eval((e1 eval e))
 }
 
 // Binary operator
 abstract class Bin(e1: Ex, e2: Ex, op: Op) extends Ex {
+  override def step(e: Env): EvalStep = op eval (interp(e1, e), interp(e2, e))
   override def infix = e1.infix + op.infix + e2.infix
-  override def eval(e: Env): Const = op eval (e1 eval e, e2 eval e)
 }
 
 case class Neg(e1: Ex) extends Un(e1, ONeg)
@@ -78,10 +96,10 @@ case class Car(e1: Ex) extends Un(e1, OCar)
 case class Cdr(e1: Ex) extends Un(e1, OCdr)
 
 case class SubStr(e1: Ex, e2: Ex, e3: Ex) extends Ex {
-  def eval(e: Env) = {
-    val e1v = e1 eval e
-    val e2v = e2 eval e
-    val e3v = e3 eval e
+  override def step(e: Env) = {
+    val e1v = interp(e1, e)
+    val e2v = interp(e2, e)
+    val e3v = interp(e3, e)
     (e1v, e2v, e3v) match {
       case (Str(s), Z(a), Z(b)) => Str(s.substring(a.intValue, b.intValue))
       case _                    => typerr("string-Z-Z", Cons(e1, Cons(e2, Cons(e3, Nil))))
@@ -90,8 +108,8 @@ case class SubStr(e1: Ex, e2: Ex, e3: Ex) extends Ex {
   def infix = "sub(" + e1 + ", " + e2 + ", " + e3 + ")"
 }
 case class TrimStr(e1: Ex) extends Ex {
-  def eval(e: Env) = {
-    val e1v = e1 eval e
+  override def step(e: Env) = {
+    val e1v = interp(e1, e)
     e1v match {
       case Str(s) => Str(s.trim)
       case _      => typerr("string", e1)
@@ -100,8 +118,8 @@ case class TrimStr(e1: Ex) extends Ex {
   def infix = "trim(" + e1 + ")"
 }
 case class StrLen(e1: Ex) extends Ex {
-  def eval(e: Env) = {
-    val e1v = e1 eval e
+  override def step(e: Env) = {
+    val e1v = interp(e1, e)
     e1v match {
       case Str(s) => Z(s.length)
       case _      => typerr("string", e1)
@@ -110,16 +128,16 @@ case class StrLen(e1: Ex) extends Ex {
   def infix = "strlen(" + e1 + ")"
 }
 case class ToStr(e1: Ex) extends Ex {
-  def eval(e: Env) = Str(e1 eval e infix)
+  override def step(e: Env) = Str(interp(e1, e).infix)
   def infix = "tostr(" + e1 + ")"
 }
 
 case class Ife(e1: Ex, e2: Ex, e3: Ex) extends Ex {
-  def eval(e: Env) = {
-    val test = e1 eval e
+  override def step(e: Env) = {
+    val test = interp(e1, e)
     test match {
-      case True  => e2 eval e
-      case False => e3 eval e
+      case True  => Next(e2, e)
+      case False => Next(e3, e)
       case _     => typerr("boolean", e1)
     }
   }
@@ -127,25 +145,18 @@ case class Ife(e1: Ex, e2: Ex, e3: Ex) extends Ex {
 }
 
 case class Fun(fargs: List[String], body: Ex) extends Ex {
-  def eval(e: Env) = Clo(fargs, body, e)
+  def step(e: Env) = Clo(fargs, body, e)
   def infix = "fun " + fargs.mkString("(", ", ", ")") + " => " + body.infix
 }
 
-case class Clo(fargs: List[String], body: Ex, env: Env) extends Const {
-  // avoid printing environment values - letrec creates cyclic environment
-  override def infix = Fun(fargs, body).infix + "@" + (env keys).mkString("{", ",", "}")
-  override def toString = "Clo(" + fargs + ", " + body + ", " + (env keys).mkString("{", ",", "}") + ")"
-}
-
 case class App(fexp: Ex, args: List[Ex]) extends Ex {
-  @tailrec
-  final def eval(env: Env) = {
-    val fun = fexp eval env
+  override def step(env: Env) = {
+    val fun = interp(fexp, env)
     fun match {
       case _@ Clo(fargs, body, fenv) =>
-        val actarg = args map (_ eval env)
+        val actarg = args map ((arg:Ex)=>interp(arg, env))
         val env2 = fenv ++ Map(fargs zip actarg: _*)
-        body eval env2
+        Next(body, env2)
       case _ => typerr("Not a function", fexp)
     }
   }
@@ -156,28 +167,29 @@ case class App(fexp: Ex, args: List[Ex]) extends Ex {
 }
 
 case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
-  def eval(env: Env) = {
+  override def step(env: Env) = {
     // Use a mutable map initialized with current env so we can evaluate arguments in their own environmnent, creating a cyclic environment
     val letrecenv = mutable.Map[String, Const](env toList: _*)
-    val actarg = args map (_ eval letrecenv);
+    val actarg = args map (interp(_,letrecenv));
     letrecenv ++= fargs zip actarg
-    body eval letrecenv
+    println("Stackdepth: "+ Thread.currentThread.getStackTrace.size)
+    Next(body , letrecenv)
   }
   def infix = "let* " + ((fargs zip args) map (p => { val (a, e) = p; a + "=" + e.infix })).mkString("; ") + " in " + body.infix
 }
 
 // For the REPL 
 case class Def(n: String, e: Ex) extends Ex {
-  def eval(env: Env): Const = ReplDef(n, e eval env)
+  def step(env: Env): EvalStep = ReplDef(n, interp(e,env))
   def infix = "def " + n + "=" + e.infix
 }
 
 case class Undef(n: String) extends Ex {
-  def eval(env: Env): Const = ReplUnDef(n)
+  def step(env: Env): EvalStep = ReplUnDef(n)
   def infix = "undef " + n;
 }
 
 case class Load(n: String) extends Ex {
-  def eval(env: Env): Const = ReplLoad(n)
+  def step(env: Env): EvalStep = ReplLoad(n)
   def infix = "load " + n;
 }

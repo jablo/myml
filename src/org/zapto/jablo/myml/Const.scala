@@ -7,7 +7,7 @@ package org.zapto.jablo.myml
 import Ex.Env
 
 abstract class Const extends Ex {
-  override def eval(e: Env): Const = this
+  override def step(e: Env): EvalStep = this
   protected def undef(op: String, c: Const): Nothing = throw new UndefinedOperationException("Undefined operation " + this + op + c)
   protected def undef(op: String): Nothing = throw new UndefinedOperationException("Undefined operation " + op + " " + this)
   def unary_- : Const = undef("-")
@@ -25,9 +25,6 @@ abstract class Const extends Ex {
   def unary_! : Const = undef("not")
   def &&(c: Const): Const = undef("and", c)
   def ||(c: Const): Const = undef("or", c)
-  protected implicit def booleanToConst(b: Boolean): Const = if (b) True else False
-  protected implicit def bigintToConst(b: BigInt): Const = Z(b)
-  protected implicit def stringToConst(s: String): Const = Str(s)
 }
 
 object Const {
@@ -118,6 +115,13 @@ case class Str(s: String) extends Const {
     case Str(t) => s >= t
     case _      => undef(">=", c)
   }
+}
+
+// Closures
+case class Clo(fargs: List[String], body: Ex, env: Env) extends Const {
+  // avoid printing environment values - letrec creates cyclic environment
+  override def infix = Fun(fargs, body).infix + "@" + (env keys).mkString("{", ",", "}")
+  override def toString = "Clo(" + fargs + ", " + body + ", " + (env keys).mkString("{", ",", "}") + ")"
 }
 
 // For the REPL - to return a modified environment
