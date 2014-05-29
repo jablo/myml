@@ -1,5 +1,3 @@
-def error = let x=0 in 1/x;
-
 def Y  = fun(fu) => (fun(recur) => recur(recur)) (fun(recur) => fun(x) => fu(recur(recur))(x));
 
 def fac = fun(n) => 
@@ -31,7 +29,7 @@ def fold = fun (l,f,z) =>
               in fold2(t,f(acc,h))
          in fold2(l,z);
 
-def fold1 = fun (l,f) => if l=nil then nil else fold(l,f,car(l));
+def fold1 = fun (l,f) => if l=nil then nil else fold(cdr(l),f,car(l));
 
 def fibs = fun (n) =>
     let* fibs2 = fun (n,acc) =>

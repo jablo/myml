@@ -142,3 +142,6 @@ case class ReplUnDef(n: String) extends Const {
 case class ReplLoad(n: String) extends Const {
   override def infix = "load " + n
 }
+case class ReplReLoad() extends Const {
+  override def infix = "reload"
+}

@@ -51,6 +51,11 @@ class MyMLException(msg: String = null, cause: Throwable = null) extends java.la
 class TypeErrorException(msg: String = null, cause: Throwable = null) extends MyMLException(msg, cause) {}
 class UndefinedOperationException(msg: String = null, cause: Throwable = null) extends MyMLException(msg, cause) {}
 
+case class ErrorEx(n: String) extends Ex {
+  override def step(e: Env): EvalStep = throw new MyMLException("Error: " + n)
+  override lazy val compiled = List(NotImplemented())
+  override def infix = "error(" + n + ")"
+}
 case class Var(n: String) extends Ex {
   override def step(e: Env): EvalStep = e get n match {
     case None    => err("Unknown variable", this)
@@ -209,6 +214,12 @@ case class Load(n: String) extends Ex {
   def step(env: Env): EvalStep = ReplLoad(n)
   lazy val compiled = List(NotImplemented())
   def infix = "load " + n;
+}
+
+case class ReLoad() extends Ex {
+  def step(env: Env): EvalStep = ReplReLoad()
+  lazy val compiled = List(NotImplemented())
+  def infix = "reload"
 }
 
 case class Compile(e: Ex) extends Ex {

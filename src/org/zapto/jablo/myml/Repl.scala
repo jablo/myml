@@ -53,6 +53,10 @@ object Repl {
         case ReplDef(n, c) => env += Pair(n, c)
         case ReplUnDef(n)  => env -= n
         case ReplLoad(n)   => readfile(n)
+        case ReplReLoad()    => { 
+            env.clear
+            readresource("preload.myml")            
+        }
         case _             => Unit
       }
     } catch {

@@ -17,15 +17,19 @@ class Parser extends JavaTokenParsers with PackratParsers {
 
   // The MyML language parser
   lazy val program: ProgPar = repsep(repl, ";") 
-  lazy val expr: ExPar = cond | fun | let | letr | arith
+  lazy val expr: ExPar = error | cond | fun | let | letr | arith
 
   // REPL commands
   lazy val repl: ExPar = "def" ~> assign ^^ ((p) => { val (a, b) = p; Def(a, b) }) |
     "undef" ~> ident ^^ ((p) => Undef(p)) |
-    "load" ~> stringLiteral ^^ ((p)=>Load(p drop(1) dropRight(1))) |
+    "load" ~> stringLiteral ^^ ((p)=>Load(stripQuote(p))) |
+    "reload" ^^ ((_)=>ReLoad()) |
     "compile" ~> expr ^^ (Compile(_)) | expr
 
   // Control structures
+  lazy val error: ExPar = "error" ~ "(" ~> stringLiteral <~ ")" ^^ ((p:String)=>ErrorEx(stripQuote(p))) |
+    "error" ~ "(" ~ ")" ^^ ((_)=>ErrorEx("")) | "error" ^^ ((_)=>ErrorEx(""))
+    
   lazy val cond: ExPar = ("if" ~> arith <~ "then") ~ expr ~ ("else" ~> expr) ^^ {
     case test ~ yes ~ no => Ife(test, yes, no)
   }
@@ -110,7 +114,8 @@ class Parser extends JavaTokenParsers with PackratParsers {
   // Terminals
   lazy val num: ExPar = wholeNumber ~ ("/" ~> wholeNumber) ^^ { case n ~ d => q(BigInt(n), BigInt(d)) } |
     wholeNumber ^^ ((p) => Z(BigInt(p))) |
-    "true" ^^ ((_) => True) | "false" ^^ ((_) => False) | "nil" ^^ ((_) => Nil) | stringLiteral ^^ Str
-
+    "true" ^^ ((_) => True) | "false" ^^ ((_) => False) | "nil" ^^ ((_) => Nil) | stringLiteral ^^ Str    
   lazy val variable: ExPar = ident ^^ ((p) => Var(p))
+  
+  def stripQuote(p:String):String = p drop(1) dropRight(1)
 }
