@@ -4,8 +4,21 @@
 
 package org.zapto.jablo.myml
 
-abstract class Op(val infix: String, val mkEx: (Ex, Ex) => Ex, val eval: (Const, Const) => Const)
-abstract class UnOp(val infix: String, val mkEx: Ex => Ex, val eval: Const => Const)
+import Ex.Env
+
+abstract class Op(val infix: String, val mkEx: (Ex, Ex) => Ex, val eval: (Const, Const) => Const) extends ByteCode {
+    def exec(stack: MStack, env: Env): Store = {
+    val (v1, s1) = pop(stack)
+    val (v2, s2) = pop(s1)
+    (s2.push(eval(v1, v2)), env, none)
+  }
+}
+abstract class UnOp(val infix: String, val mkEx: Ex => Ex, val eval: Const => Const) extends ByteCode {
+    def exec(stack: MStack, env: Env): Store = {
+    val (v1, s1) = pop(stack)
+    (s1.push(eval(v1)), env, none)
+  }
+}
 
 case object ONeg extends UnOp("-", Neg, -_)
 case object OAdd extends Op("+", Add, _ + _)

@@ -1,3 +1,4 @@
+def error = let x=0 in 1/x;
 
 def Y  = fun(fu) => (fun(recur) => recur(recur)) (fun(recur) => fun(x) => fu(recur(recur))(x));
 
@@ -39,6 +40,17 @@ def fibs = fun (n) =>
             in fibs2(n-1,f1+f2::acc)
     in fibs2(n,1::0::nil);
 
-def l=map(fibs(5),fibs);
+
+def ltake = fun(l,n) =>  
+    if n=0 then nil else
+    if l=nil then error else
+    let h=car(l); t=cdr(l)
+    in h::ltake(t(), n-1);
+
+def lcar = fun(l) = car(l);
+def lcdr = fun(l) => if l=nil then error() else (cdr(l))();
+def lfibo = fun(a,b) => a::(fun()=>lfibo(b,a+b));
+def lfibs = lfibo(0,1);
 
 def last = 1
+

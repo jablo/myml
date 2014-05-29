@@ -16,14 +16,14 @@ class Parser extends JavaTokenParsers with PackratParsers {
   type ProgPar = PackratParser[List[Ex]]
 
   // The MyML language parser
-  lazy val program: ProgPar = repsep(repl, ";")
+  lazy val program: ProgPar = repsep(repl, ";") 
   lazy val expr: ExPar = cond | fun | let | letr | arith
 
   // REPL commands
   lazy val repl: ExPar = "def" ~> assign ^^ ((p) => { val (a, b) = p; Def(a, b) }) |
     "undef" ~> ident ^^ ((p) => Undef(p)) |
     "load" ~> stringLiteral ^^ ((p)=>Load(p drop(1) dropRight(1))) |
-    expr
+    "compile" ~> expr ^^ (Compile(_)) | expr
 
   // Control structures
   lazy val cond: ExPar = ("if" ~> arith <~ "then") ~ expr ~ ("else" ~> expr) ^^ {
@@ -47,7 +47,7 @@ class Parser extends JavaTokenParsers with PackratParsers {
   lazy val assign: EqPar = ident ~ ("=" ~> expr) ^^ {
     case v ~ e => (v, e)
   }
-  lazy val bifun: ExPar = "car" ~ "(" ~> expr <~ ")" ^^ (Car) | "cdr" ~ "(" ~> expr <~ ")" ^^ (Cdr) |
+  lazy val builtin: ExPar = "car" ~ "(" ~> expr <~ ")" ^^ (Car) | "cdr" ~ "(" ~> expr <~ ")" ^^ (Cdr) |
     "substr" ~ "(" ~> repN(3, expr) <~ ")" ^^ { case List(e1, e2, e3) => SubStr(e1, e2, e3) } |
     "strlen" ~ "(" ~> expr <~ ")" ^^ (StrLen) |
     "tostr"  ~ "(" ~> expr <~ ")" ^^ (ToStr) |
@@ -86,7 +86,7 @@ class Parser extends JavaTokenParsers with PackratParsers {
     case op ~ e => op.mkEx(e)
   } | term
   lazy val term: ExPar = app | num | variable | pexpr
-  lazy val app: ExPar = bifun | (app | variable | pexpr2) ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
+  lazy val app: ExPar = builtin | (app | variable | pexpr2) ~ ("(" ~> repsep(expr, ",") <~ ")") ^^ {
     case fn ~ args => App(fn, args)
   }
   lazy val pexpr: ExPar = "(" ~> expr <~ ")" ^^ ((f) => Par(f))

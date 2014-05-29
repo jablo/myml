@@ -7,7 +7,8 @@ package org.zapto.jablo.myml
 import Ex.Env
 
 abstract class Const extends Ex {
-  override def step(e: Env): EvalStep = this
+  override final def step(e: Env): EvalStep = this
+  override final lazy val compiled = List(Push(this))
   protected def undef(op: String, c: Const): Nothing = throw new UndefinedOperationException("Undefined operation " + this + op + c)
   protected def undef(op: String): Nothing = throw new UndefinedOperationException("Undefined operation " + op + " " + this)
   def unary_- : Const = undef("-")
@@ -122,6 +123,11 @@ case class Clo(fargs: List[String], body: Ex, env: Env) extends Const {
   // avoid printing environment values - letrec creates cyclic environment
   override def infix = Fun(fargs, body).infix + "@" + (env keys).mkString("{", ",", "}")
   override def toString = "Clo(" + fargs + ", " + body + ", " + (env keys).mkString("{", ",", "}") + ")"
+}
+
+// Jump-to-code/subroutines for the bytecode interpreter
+case class Code(ins: List[ByteCode]) extends Const {
+  override def infix = "not implemented"
 }
 
 // For the REPL - to return a modified environment
