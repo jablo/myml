@@ -20,7 +20,7 @@ class Parser extends JavaTokenParsers with PackratParsers {
   lazy val expr: ExPar = error | cond | fun | let | letr | arith
 
   // REPL commands
-  lazy val repl: ExPar = "def" ~> assign ^^ ((p) => { val (a, b) = p; Def(a, b) }) |
+  lazy val repl: ExPar = "def" ~> assignornamedfun ^^ ((p) => { val (a, b) = p; Def(a, b) }) |
     "undef" ~> ident ^^ ((p) => Undef(p)) |
     "load" ~> stringLiteral ^^ ((p)=>Load(stripQuote(p))) |
     "reload" ^^ ((_)=>ReLoad()) |
@@ -35,22 +35,26 @@ class Parser extends JavaTokenParsers with PackratParsers {
   }
   lazy val fun: ExPar = "fun" ~ "(" ~> repsep(ident, ",") ~ (")" ~ "=>" ~> expr) ^^ {
     case vs ~ b => Fun(vs, b)
+  } | "fun" ~> namedfun ^^ { case (fnam, args, body) => LetR(List(fnam), List(Fun(args, body)), Var(fnam)) }
+  lazy val namedfun: PackratParser[(String,List[String],Ex)] = ident ~ ( "(" ~> repsep(ident, ",")) ~ (")" ~ "=>" ~> expr) ^^ {
+    case fnam ~ vs ~ b => (fnam,vs,b)
   }
   lazy val let: ExPar = "let" ~> repsep(assign, ";") ~ ("in" ~> expr) ^^ {
     case asgns ~ body => {
       val (args, exprs) = asgns.unzip
       App(Fun(args, body), exprs)
     }
-  }
-  lazy val letr: ExPar = "let*" ~> repsep(assign, ";") ~ ("in" ~> expr) ^^ {
+  } 
+  lazy val letr: ExPar = "let*" ~> repsep(assignornamedfun, ";") ~ ("in" ~> expr) ^^ {
     case asgns ~ body => {
       val (args, exprs) = asgns.unzip
       LetR(args, exprs, body)
-    }
-  }
+    } 
+  } 
   lazy val assign: EqPar = ident ~ ("=" ~> expr) ^^ {
     case v ~ e => (v, e)
-  }
+  } 
+  lazy val assignornamedfun: EqPar = assign | namedfun ^^ { case (fnam, args, body) => (fnam, Fun(args,body))}
   lazy val builtin: ExPar = "car" ~ "(" ~> expr <~ ")" ^^ (Car) | "cdr" ~ "(" ~> expr <~ ")" ^^ (Cdr) |
     "substr" ~ "(" ~> repN(3, expr) <~ ")" ^^ { case List(e1, e2, e3) => SubStr(e1, e2, e3) } |
     "strlen" ~ "(" ~> expr <~ ")" ^^ (StrLen) |
@@ -83,7 +87,7 @@ class Parser extends JavaTokenParsers with PackratParsers {
   lazy val product: ExPar = product ~ mulop ~ pow ^^ {
     case e1 ~ op ~ e2 => op.mkEx(e1, e2)
   } | pow
-  lazy val pow: ExPar = pow ~ powop ~ term ^^ {
+  lazy val pow: ExPar = term ~ powop ~ pow ^^ { // note: pow (^) is right-associative
     case e1 ~ op ~ e2 => op.mkEx(e1, e2)
   } | unary
   lazy val unary: ExPar = negop ~ unary ^^ {
