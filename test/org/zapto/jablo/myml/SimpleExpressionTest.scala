@@ -26,6 +26,8 @@ class SimpleExpressionTest {
     assertEquals(Z(1), p.get);
     assertEquals(Z(1), p.get.eval(e))
     assertEquals(p.get, reparse(p))
+    val ev = p.get.eval(Map())
+    assertEquals(Z(1), ev)
   }
 
   @Test

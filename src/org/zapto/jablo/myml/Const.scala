@@ -8,7 +8,7 @@ import Ex.Env
 
 abstract class Const extends Ex {
   override final def step(e: Env): EvalStep = this
-  override final lazy val compiled = List(Push(this))
+  override final val bytecode = List(Push(this))
   protected def undef(op: String, c: Const): Nothing = throw new UndefinedOperationException("Undefined operation " + this + op + c)
   protected def undef(op: String): Nothing = throw new UndefinedOperationException("Undefined operation " + op + " " + this)
   def unary_- : Const = undef("-")
@@ -125,17 +125,18 @@ case class Clo(fargs: List[String], body: Ex, env: Env) extends Const {
   override def toString = "Clo(" + fargs + ", " + body + ", " + (env keys).mkString("{", ",", "}") + ")"
 }
 
-// For the bytecode interpreter only
+// Subroutine calls on the stack for the bytecode interpreter 
 case class Subr(fargs: List[String], code: List[ByteCode], env: BCScope) extends Const {
   // avoid printing environment values - letrec creates cyclic environment
   override def infix = fargs.mkString("[", ",", "] ") + code.mkString("[", ",", "]")
-  override def toString = "Subr(" + fargs.mkString("[", ",", "] ") + code.mkString("[", ",", "] @ ") + env.keys.mkString("{", ", ", "}")
+  override def toString = "Subr(" + fargs.mkString("[", ",", "], ") + code.mkString("[", ",", "] @ ") + env.keys.mkString("{", ", ", "}")
 }
 
-// Jump-to-code/subroutines for the bytecode interpreter
+// then/else branches on the stack and the initial program for the bytecode interpreter
 case class Code(ins: List[ByteCode]) extends Const {
   override def infix = "not implemented"
 }
+
 // Run bytecode through the bytecode interpreter
 case class ReplRun(ins: List[ByteCode]) extends Const {
   override def infix = "not implemented"
@@ -153,6 +154,7 @@ case class ReplUnDef(n: String) extends Const {
 case class ReplLoad(n: String) extends Const {
   override def infix = "load " + n
 }
+
 case class ReplReLoad() extends Const {
   override def infix = "reload"
 }

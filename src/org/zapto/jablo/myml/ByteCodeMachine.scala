@@ -6,20 +6,16 @@
 
 package org.zapto.jablo.myml
 
-import Ex.Env
+import Ex.{ Env, MutEnv }
 import scala.annotation.tailrec
 import scala.collection.immutable.Stack
 import scala.collection._
-import BCScope.MutEnv
 
 abstract class BCScope {
   def get(n: String): Option[Const]
   def +(n: String, e: Const): BCScope
   def ++(es: List[(String, Const)]): BCScope
   def keys: Iterable[String]
-}
-object BCScope {
-    type MutEnv = mutable.Map[String,Const]
 }
 case class NilScope extends BCScope {
   def get(s: String): Option[Const] = None
@@ -51,7 +47,6 @@ case class BCMutEnv(outer: BCScope, val env: MutEnv = mutable.Map()) extends BCS
   def ++(es: List[(String, Const)]): BCScope = { env ++= es; this }
   def keys = env.keys
 }
-
 
 class ByteCodeMachine {
 
@@ -108,11 +103,21 @@ case class MakeClosure() extends ByteCode {
 
 case class Call extends ByteCode {
   def exec(stack: MStack, env: BCScope): Store = {
-    val (Subr(fargs, code, fenv), s1) = pop(stack)
-    val n = fargs size
-    val argvalpairs = (fargs reverse) zip (s1 take n)
-    val s2 = s1 drop n
-    (s2, fenv ++ argvalpairs, code)
+    val (subrorclos, s1) = pop(stack)
+    subrorclos match {
+      case Subr(fargs, code, fenv) =>
+        val n = fargs size
+        val argvalpairs = (fargs reverse) zip (s1 take n)
+        val s2 = s1 drop n
+        (s2, fenv ++ argvalpairs, code)
+      case Clo(args, body, env1) =>  
+        // Cheating a bit - retrofit a Clo(...) created through direct interpretation into a copmiled bytecode function        
+        val code = body.bytecode
+        val n = args size
+        val argvalpairs = (args reverse) zip (s1 take n)
+        val s2 = s1 drop n
+        (s2, BCEnv(NilScope(), env1 ++ argvalpairs), code)
+    }
   }
 }
 
