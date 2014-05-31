@@ -50,6 +50,7 @@ object ByteCodeMachine {
     insns match {
       case Nil => stack.top
       case insn :: insns1 =>
+        println("Exec: " + insn)
         val (stack1, scope1, morecode) = insn.exec(stack, env)
         val newcode = morecode ++ insns1
         interp1(stack1, newcode, scope1)
@@ -103,8 +104,8 @@ case class Call extends ByteCode {
 case class Cond extends ByteCode {
   def exec(stack: MStack, env: BCScope): Store = {
     val (test, s1) = pop(stack)
-    val (Code(tcode), s2) = pop(s1)
-    val (Code(fcode), s3) = pop(s2)
+    val (Code(fcode), s2) = pop(s1)
+    val (Code(tcode), s3) = pop(s2)
     (s3, env, if (test == True) tcode else fcode)
   }
 }
