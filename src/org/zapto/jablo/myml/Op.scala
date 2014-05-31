@@ -8,8 +8,8 @@ import Ex.Env
 
 abstract class Op(val infix: String, val mkEx: (Ex, Ex) => Ex, val eval: (Const, Const) => Const) extends ByteCode {
     def exec(stack: MStack, env: BCScope): Store = {
-    val (v1, s1) = pop(stack)
-    val (v2, s2) = pop(s1)
+    val (v2, s1) = pop(stack)
+    val (v1, s2) = pop(s1)
     (s2.push(eval(v1, v2)), env, none)
   }
 }

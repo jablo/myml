@@ -165,7 +165,7 @@ case class Ife(e1: Ex, e2: Ex, e3: Ex) extends Ex {
 
 case class Fun(fargs: List[String], body: Ex) extends Ex {
   def step(e: Env) = Clo(fargs, body, e)
-  override lazy val compiled = List(PushLexicalScope(), Push(Subr(fargs, body.compiled ++ List(PopLexicalScope()))))
+  override lazy val compiled = List(Push(Subr(fargs, body.compiled, NilScope())), MakeClosure())
   def infix = "fun " + fargs.mkString("(", ", ", ")") + " => " + body.infix
 }
 
@@ -199,11 +199,10 @@ case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
     letrecenv ++= fargs zip actarg
     Next(body, letrecenv)
   }
-  // compiled is probably wrong. Dont see how or where we can create a cyclic env
   lazy val compiled = {
     val argscode:List[ByteCode] = (args.map ((ex)=>ex.compiled)).flatten
     val asgncode = fargs.reverse.map(Assign(_))
-    List(PushLexicalScope()) ++ argscode ++ asgncode ++ body.compiled ++ List(PopLexicalScope())
+    List(RecEnv()) ++ argscode ++ asgncode ++ body.compiled
   }
   def infix = "let* " + ((fargs zip args) map (p => { val (a, e) = p; a + "=" + e.infix })).mkString("; ") + " in " + body.infix
 }

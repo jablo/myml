@@ -58,12 +58,12 @@ object Const {
 case object MNil extends Const {
   override def infix: String = "nil"
   override def ==(c: Const): Const = c match {
-    case MNil            => True
+    case MNil           => True
     case ConsCell(_, _) => False
     case _              => undef("=", c)
   }
   override def !=(c: Const): Const = c match {
-    case MNil            => False
+    case MNil           => False
     case ConsCell(_, _) => True
     case _              => undef("<>", c)
   }
@@ -71,16 +71,16 @@ case object MNil extends Const {
 
 case class ConsCell(c1: Const, c2: Const) extends Const {
   override def infix: String = c1 match {
-    case ConsCell(c11,_) => "[" + c1.infix + "]" + "::" + c2.infix
-    case _ => c1.infix + "::" + c2.infix
+    case ConsCell(c11, _) => "[" + c1.infix + "]" + "::" + c2.infix
+    case _                => c1.infix + "::" + c2.infix
   }
   override def ==(c: Const): Const = c match {
-    case MNil            => False
+    case MNil           => False
     case ConsCell(a, b) => c1 == a && c2 == b
     case _              => undef("=", c)
   }
   override def !=(c: Const): Const = c match {
-    case MNil            => True
+    case MNil           => True
     case ConsCell(a, b) => c1 != a || c2 != b
     case _              => undef("<>", c)
   }
@@ -126,9 +126,10 @@ case class Clo(fargs: List[String], body: Ex, env: Env) extends Const {
 }
 
 // For the bytecode interpreter only
-case class Subr(fargs: List[String], code: List[ByteCode]) extends Const {
+case class Subr(fargs: List[String], code: List[ByteCode], env: BCScope) extends Const {
   // avoid printing environment values - letrec creates cyclic environment
-  override def infix = fargs.mkString("[",",","] ") + code.mkString("[",",","]") 
+  override def infix = fargs.mkString("[", ",", "] ") + code.mkString("[", ",", "]")
+  override def toString = "Subr(" + fargs.mkString("[", ",", "] ") + code.mkString("[", ",", "] @ ") + env.keys.mkString("{", ", ", "}")
 }
 
 // Jump-to-code/subroutines for the bytecode interpreter
