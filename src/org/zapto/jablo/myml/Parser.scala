@@ -24,7 +24,8 @@ class Parser extends JavaTokenParsers with PackratParsers {
     "undef" ~> ident ^^ ((p) => Undef(p)) |
     "load" ~> stringLiteral ^^ ((p)=>Load(stripQuote(p))) |
     "reload" ^^ ((_)=>ReLoad()) |
-    "compile" ~> expr ^^ (Compile(_)) | expr
+    "compile" ~> expr ^^ (Compile(_)) |
+    "run" ~> expr ^^ (Run(_)) | expr 
 
   // Control structures
   lazy val error: ExPar = "error" ~ "(" ~> stringLiteral <~ ")" ^^ ((p:String)=>ErrorEx(stripQuote(p))) |
@@ -118,7 +119,7 @@ class Parser extends JavaTokenParsers with PackratParsers {
   // Terminals
   lazy val num: ExPar = wholeNumber ~ ("/" ~> wholeNumber) ^^ { case n ~ d => q(BigInt(n), BigInt(d)) } |
     wholeNumber ^^ ((p) => Z(BigInt(p))) |
-    "true" ^^ ((_) => True) | "false" ^^ ((_) => False) | "nil" ^^ ((_) => Nil) | stringLiteral ^^ Str    
+    "true" ^^ ((_) => True) | "false" ^^ ((_) => False) | "nil" ^^ ((_) => MNil) | stringLiteral ^^ Str    
   lazy val variable: ExPar = ident ^^ ((p) => Var(p))
   
   def stripQuote(p:String):String = p drop(1) dropRight(1)

@@ -9,25 +9,27 @@ import scala.collection._
 import scala.annotation.tailrec
 import Ex.interp
 
+trait ExHelper {
+  final def typerr(s: String, e: Ex): Nothing = throw new TypeErrorException(s + " in: " + e.infix)
+  final def err(s: String, e: Ex): Nothing = throw new MyMLException(s + " " + e.infix)
+  final def err(s: String): Nothing = throw new MyMLException(s)
+  final implicit def booleanToConst(b: Boolean): Const = if (b) True else False
+  final implicit def bigintToConst(b: BigInt): Const = Z(b)
+  final implicit def stringToConst(s: String): Const = Str(s)
+  final implicit def constToEvalStep(c: Const): EvalStep = Done(c)
+}
+
 /**
  * Expressions
  * <ul><li>eval method to evaluate the program
  * <li>infix method like toString, but tries to generate an infix notation of the program that could be re-parsed
  * </ul>
  */
-abstract class Ex {
+abstract class Ex extends ExHelper {
   final def eval(e: Env): Const = interp(this, e)
   def step(e: Env): EvalStep
   val compiled: List[ByteCode]
   def infix: String
-  
-  
-  protected final def typerr(s: String, e: Ex): Nothing = throw new TypeErrorException(s + " in: " + e.infix)
-  protected final def err(s: String, e: Ex): Nothing = throw new MyMLException(s + " " + e.infix)
-  protected final implicit def booleanToConst(b: Boolean): Const = if (b) True else False
-  protected final implicit def bigintToConst(b: BigInt): Const = Z(b)
-  protected final implicit def stringToConst(s: String): Const = Str(s)
-  protected final implicit def constToEvalStep(c: Const): EvalStep = Done(c)
 }
 
 object Ex {
@@ -53,7 +55,7 @@ class UndefinedOperationException(msg: String = null, cause: Throwable = null) e
 
 case class ErrorEx(n: String) extends Ex {
   override def step(e: Env): EvalStep = throw new MyMLException("Error: " + n)
-  override lazy val compiled = List(NotImplemented())
+  override lazy val compiled = List(Push(Str(n)), ErrIns())
   override def infix = "error(" + n + ")"
 }
 case class Var(n: String) extends Ex {
@@ -114,7 +116,7 @@ case class SubStr(e1: Ex, e2: Ex, e3: Ex) extends Ex {
     val e3v = interp(e3, e)
     (e1v, e2v, e3v) match {
       case (Str(s), Z(a), Z(b)) => Str(s.substring(a.intValue, b.intValue))
-      case _                    => typerr("string-Z-Z", Cons(e1, Cons(e2, Cons(e3, Nil))))
+      case _                    => typerr("string-Z-Z", Cons(e1, Cons(e2, Cons(e3, MNil))))
     }
   }
   override lazy val compiled = e1.compiled ++ e2.compiled ++ e3.compiled ++ List[ByteCode](SubStrIns())
@@ -144,7 +146,7 @@ case class StrLen(e1: Ex) extends Ex {
 }
 case class ToStr(e1: Ex) extends Ex {
   override def step(e: Env) = Str(interp(e1, e).infix)
-    override lazy val compiled = e1.compiled ++ List(ToStrIns())
+  override lazy val compiled = e1.compiled ++ List(ToStrIns())
   def infix = "tostr(" + e1 + ")"
 }
 
@@ -157,13 +159,13 @@ case class Ife(e1: Ex, e2: Ex, e3: Ex) extends Ex {
       case _     => typerr("boolean", e1)
     }
   }
-  override lazy val compiled = List[ByteCode](Push(Code(e2.compiled)), Push(Code(e3.compiled))) ++ e1. compiled ++ List(Cond())
+  override lazy val compiled = List[ByteCode](Push(Code(e2.compiled)), Push(Code(e3.compiled))) ++ e1.compiled ++ List(Cond())
   def infix = "if " + e1.infix + " then " + e2.infix + " else " + e3.infix
 }
 
 case class Fun(fargs: List[String], body: Ex) extends Ex {
   def step(e: Env) = Clo(fargs, body, e)
-  override lazy val compiled = throw new RuntimeException("Havent implemented compile fun")
+  override lazy val compiled = List(PushLexicalScope(), Push(Subr(fargs, body.compiled ++ List(PopLexicalScope()))))
   def infix = "fun " + fargs.mkString("(", ", ", ")") + " => " + body.infix
 }
 
@@ -178,7 +180,11 @@ case class App(fexp: Ex, args: List[Ex]) extends Ex {
       case _ => typerr("Not a function", fexp)
     }
   }
-  override lazy val compiled = List()    
+  override lazy val compiled = {
+    val argscode:List[ByteCode] = (args.map ((ex)=>ex.compiled)).flatten
+    val fcode = fexp.compiled
+    argscode ++ fcode ++ List(Call())
+  }
   def infix = (fexp match {
     case Var(_) => fexp.infix
     case _      => "(" + fexp.infix + ")"
@@ -193,7 +199,12 @@ case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
     letrecenv ++= fargs zip actarg
     Next(body, letrecenv)
   }
-  lazy val compiled = List(NotImplemented())
+  // compiled is probably wrong. Dont see how or where we can create a cyclic env
+  lazy val compiled = {
+    val argscode:List[ByteCode] = (args.map ((ex)=>ex.compiled)).flatten
+    val asgncode = fargs.reverse.map(Assign(_))
+    List(PushLexicalScope()) ++ argscode ++ asgncode ++ body.compiled ++ List(PopLexicalScope())
+  }
   def infix = "let* " + ((fargs zip args) map (p => { val (a, e) = p; a + "=" + e.infix })).mkString("; ") + " in " + body.infix
 }
 
@@ -225,5 +236,11 @@ case class ReLoad() extends Ex {
 case class Compile(e: Ex) extends Ex {
   def step(env: Env): EvalStep = Code(e.compiled)
   lazy val compiled = e.compiled
-  def infix = "compile " + e.infix;  
+  def infix = "compile " + e.infix;
+}
+
+case class Run(e: Ex) extends Ex {
+  def step(env: Env): EvalStep = ReplRun(e.compiled)
+  lazy val compiled = e.compiled
+  def infix = "compile " + e.infix;
 }

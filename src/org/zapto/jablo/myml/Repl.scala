@@ -6,7 +6,7 @@ package org.zapto.jablo.myml
 
 import scala.collection._
 import scala.io.Source
-import java.io.{FileReader, FileNotFoundException, IOException}
+import java.io.{ FileReader, FileNotFoundException, IOException }
 import Ex.interp
 
 object Repl {
@@ -28,16 +28,16 @@ object Repl {
     }
     p
   }
-  
+
   def readfile(n: String): Unit = {
-    val p: calc.ParseResult[List[Ex]] = calc.parseAll(calc.program, new FileReader(n))    
+    val p: calc.ParseResult[List[Ex]] = calc.parseAll(calc.program, new FileReader(n))
     check2(p)
     p.get map (ep(_, env))
   }
 
   def readresource(n: String): Unit = {
     val preload = Source.fromURL(getClass.getResource(n))
-    val p: calc.ParseResult[List[Ex]] = calc.parseAll(calc.program, preload.bufferedReader)    
+    val p: calc.ParseResult[List[Ex]] = calc.parseAll(calc.program, preload.bufferedReader)
     check2(p)
     p.get map (ep(_, env))
   }
@@ -46,18 +46,19 @@ object Repl {
     try {
       println("Parsed: " + exp)
       println(" Infix: " + (exp infix))
-      val ev = interp(exp,env)
+      val ev = interp(exp, env)
       println("Result: " + ev)
       println(" Infix: " + ev.infix)
       ev match {
         case ReplDef(n, c) => env += Pair(n, c)
         case ReplUnDef(n)  => env -= n
         case ReplLoad(n)   => readfile(n)
-        case ReplReLoad()    => { 
-            env.clear
-            readresource("preload.myml")            
+        case ReplReLoad() => {
+          env.clear
+          readresource("preload.myml")
         }
-        case _             => Unit
+        case ReplRun(insns) => println("bcrun: " + ByteCodeMachine.interp(insns, env))
+        case _              => Unit
       }
     } catch {
       case e: MyMLException => println(e.getMessage)
@@ -69,9 +70,11 @@ object Repl {
     Iterator.continually({ print("MyML> "); Console.readLine }).takeWhile((l) => l != null && l != "quit").
       foreach(line => {
         try {
-          val p = calc.parseAll(calc.repl, line)
-          check(p);
-          ep(p.get,env)
+          if (line.trim != "") {
+            val p = calc.parseAll(calc.repl, line)
+            check(p);
+            ep(p.get, env)
+          }
         } catch {
           case e: Throwable => println(e); println(e.getStackTraceString)
         }

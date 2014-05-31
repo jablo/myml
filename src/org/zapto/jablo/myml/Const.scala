@@ -55,15 +55,15 @@ object Const {
 }
 
 // For list representation
-case object Nil extends Const {
+case object MNil extends Const {
   override def infix: String = "nil"
   override def ==(c: Const): Const = c match {
-    case Nil            => True
+    case MNil            => True
     case ConsCell(_, _) => False
     case _              => undef("=", c)
   }
   override def !=(c: Const): Const = c match {
-    case Nil            => False
+    case MNil            => False
     case ConsCell(_, _) => True
     case _              => undef("<>", c)
   }
@@ -75,12 +75,12 @@ case class ConsCell(c1: Const, c2: Const) extends Const {
     case _ => c1.infix + "::" + c2.infix
   }
   override def ==(c: Const): Const = c match {
-    case Nil            => False
+    case MNil            => False
     case ConsCell(a, b) => c1 == a && c2 == b
     case _              => undef("=", c)
   }
   override def !=(c: Const): Const = c match {
-    case Nil            => True
+    case MNil            => True
     case ConsCell(a, b) => c1 != a || c2 != b
     case _              => undef("<>", c)
   }
@@ -125,8 +125,18 @@ case class Clo(fargs: List[String], body: Ex, env: Env) extends Const {
   override def toString = "Clo(" + fargs + ", " + body + ", " + (env keys).mkString("{", ",", "}") + ")"
 }
 
+// For the bytecode interpreter only
+case class Subr(fargs: List[String], code: List[ByteCode]) extends Const {
+  // avoid printing environment values - letrec creates cyclic environment
+  override def infix = fargs.mkString("[",",","] ") + code.mkString("[",",","]") 
+}
+
 // Jump-to-code/subroutines for the bytecode interpreter
 case class Code(ins: List[ByteCode]) extends Const {
+  override def infix = "not implemented"
+}
+// Run bytecode through the bytecode interpreter
+case class ReplRun(ins: List[ByteCode]) extends Const {
   override def infix = "not implemented"
 }
 
