@@ -22,12 +22,23 @@ class FunExprTest {
 
   @Test
   def funTest1 = {
+    println("funTest1")
     val p = check(calc.parseAll(calc.expr, "fun (x) => 2*x"))
     assertTrue(p.successful)
     assertEquals(Fun(List("x"), Mul(Z(2), Var("x"))), p.get)
     val e = Map("x" -> Z(5))
     assertEquals(Clo(List("x"), Mul(Z(2), Var("x")), e), p.get.eval(e))
     assertEquals(p.get, reparse(p))
+    println("program: " + p.get.bytecode)
+    val bcev = ByteCodeMachine.interp(p.get)
+    println("funTest1 - bcev: " + bcev)
+    bcev match {
+      case Subr(args, code, _) => 
+        assertEquals(args, List("x"))
+        assertEquals(code, List(Push(Z(2)), Lookup("x"), OMul))
+      case _ => fail("Woups")
+    }
+    
   }
 
   @Test
@@ -42,6 +53,8 @@ class FunExprTest {
     val rp = reparse(p)
     println("         - repar: " + rp)
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(3), ByteCodeMachine.interp(p.get))
+    assertEquals(Z(3), ByteCodeMachine.interp(p.get, Map("x" -> Z(4))))
   }
 
   @Test
@@ -53,6 +66,7 @@ class FunExprTest {
     assertEquals(pexp, p.get)
     assertEquals(Clo(List("x"), body, Map()), p.get.eval(Map()))
     assertEquals(p.get, reparse(p))
+    assertEquals(Subr(List("x"), List(Push(Z(5)),Lookup("x"),OMul,Push(Z(2)),OAdd), BCEnv(NilScope(), e)), ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -64,6 +78,7 @@ class FunExprTest {
     assertEquals(exp, p.get)
     assertEquals(Z(13), p.get.eval(Map()))
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(13), ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -76,6 +91,7 @@ class FunExprTest {
     assertEquals(app, p.get)
     assertEquals(Z(35), p.get.eval(Map()))
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(35), ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -89,6 +105,7 @@ class FunExprTest {
     val rp = reparse(p)
     println("letFunTest1 rpars: " + rp.infix)
     assertEquals(p.get, rp)
+    assertEquals(Z(36), ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -99,6 +116,7 @@ class FunExprTest {
     assertEquals(exp, p.get)
     assertEquals(Z(36), p.get.eval(Map()))
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(36), ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -114,6 +132,8 @@ class FunExprTest {
     val rp = reparse(p)
     println("            - repar: " + rp)
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(16), ByteCodeMachine.interp(p.get))
+    assertEquals(Z(16), ByteCodeMachine.interp(p.get, Map("x"->Z(12))))
   }
 
   @Test
@@ -122,6 +142,7 @@ class FunExprTest {
     check(p)
     assertEquals(Z(1), p.get eval Map())
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(1), ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -130,6 +151,7 @@ class FunExprTest {
     check(p)
     assertEquals(Z(35), p.get eval Map())
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(35), ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -138,6 +160,7 @@ class FunExprTest {
     assertEquals(Z(24), p.get eval e)
     println(p.get infix)
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(24), ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -145,6 +168,7 @@ class FunExprTest {
     val p = check(calc.parseAll(calc.expr, "(fun(fac)=>fac(4, fac))(fun (n,f) => if n=0 then 1 else n*f(n-1, f))"))
     assertEquals(Z(24), p.get eval e)
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(24), ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -152,6 +176,7 @@ class FunExprTest {
     val p = check(calc.parseAll(calc.expr, "let fak=fun(n)=>(fun(fac)=>fac(n, fac))(fun (n,f) => if n=0 then 1 else n*f(n-1, f)) in fak(5)"))
     assertEquals(Z(120), p.get eval e)
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(120), ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -165,5 +190,6 @@ class FunExprTest {
     val rp = reparse(p)
     println("      - repar: " + rp)
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(120), ByteCodeMachine.interp(p.get))
   }
 }

@@ -23,7 +23,7 @@ case class NilScope extends BCScope {
   def ++(es: List[(String, Const)]): BCScope = BCEnv(this, Map() ++ es)
   def keys = List()
 }
-case class BCEnv(outer: BCScope, val env: Env = Map()) extends BCScope {
+case class BCEnv(outer: BCScope = NilScope(), val env: Env = Map()) extends BCScope {
   def get(n: String): Option[Const] = {
     val v = env get n
     v match {
@@ -53,6 +53,7 @@ class ByteCodeMachine {
 }
 
 object ByteCodeMachine {
+  final def interp(e: Ex, env: Env = Map()): Const = interp(e.bytecode, env)
   final def interp(insns: List[ByteCode], env: Env): Const = {
     val stack = new Stack[Const]()
     val bcenv = BCEnv(NilScope(), env)

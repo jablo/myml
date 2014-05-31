@@ -42,6 +42,7 @@ class CmpExpressionTest {
     assertEquals(Lte(Z(1), Z(2)), p.get);
     assertEquals(True, p.get.eval(e))
     assertEquals(p.get, reparse(p))
+    assertEquals(True, ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -50,6 +51,7 @@ class CmpExpressionTest {
     assertEquals(Equ(Q(2, 3), Q(4, 6)), p.get)
     assertEquals(True, p.get eval e)
     assertEquals(p.get, reparse(p))
+    assertEquals(True, ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -58,6 +60,7 @@ class CmpExpressionTest {
     assertEquals(Neq(Q(2, 3), Q(4, 6)), p.get)
     assertEquals(False, p.get eval e)
     assertEquals(p.get, reparse(p))
+    assertEquals(False, ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -66,6 +69,7 @@ class CmpExpressionTest {
     assertEquals(Lte(Q(2, 3), Q(4, 5)), p.get)
     assertEquals(True, p.get eval e)
     assertEquals(p.get, reparse(p))
+    assertEquals(True, ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -74,6 +78,7 @@ class CmpExpressionTest {
     assertEquals(Lte(Q(0, 3), Q(0, 5)), p.get)
     assertEquals(True, p.get eval e)
     assertEquals(p.get, reparse(p))
+    assertEquals(True, ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -82,6 +87,7 @@ class CmpExpressionTest {
     assertEquals(Equ(Z(2), Q(8, 4)), p.get)
     assertEquals(True, p.get eval e)
     assertEquals(p.get, reparse(p))
+    assertEquals(True, ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -90,5 +96,6 @@ class CmpExpressionTest {
     assertEquals(Lte(Q(3, 2), Z(8)), p.get)
     assertEquals(True, p.get eval e)
     assertEquals(p.get, reparse(p))
+    assertEquals(True, ByteCodeMachine.interp(p.get))
   }
 }

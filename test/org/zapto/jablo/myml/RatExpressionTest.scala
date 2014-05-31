@@ -26,6 +26,7 @@ class RatExpressionTest {
     assertEquals(Mul(Q(2, 3), Pot(Var("x"), Z(2))), p.get)
     assertEquals(Q(32, 3), p.get.eval(Map("x" -> Z(4))));
     assertEquals(p.get, reparse(p))
+    assertEquals(Q(32,3), ByteCodeMachine.interp(p.get, Map("x"->Z(4))))
   }
 
   @Test

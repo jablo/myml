@@ -37,6 +37,7 @@ class IfExprTest {
     assertEquals(Ife(Lte(Var("x"), Z(4)), Z(6), Z(7)), p.get);
     assertEquals(Z(7), p.get.eval(Map("x" -> Z(12))))
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(7), ByteCodeMachine.interp(p.get, Map("x" -> Z(12))))
   }
 
   @Test
@@ -45,6 +46,7 @@ class IfExprTest {
     assertEquals(Ife(Lte(Add(Var("x"), Z(10)), Mul(Z(4), Var("x"))), Z(1), Z(2)), p.get)
     assertEquals(Z(1), p.get.eval(Map("x" -> Z(4))))
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(1), ByteCodeMachine.interp(p.get, Map("x"->Z(4))))
   }
 
   @Test
@@ -53,6 +55,7 @@ class IfExprTest {
     assertEquals(Ife(True, Z(2), Z(0)), p.get)
     assertEquals(Z(2), p.get eval e)
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(2), ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -61,6 +64,7 @@ class IfExprTest {
     assertEquals(Ife(False, Ife(True, Z(3), Z(2)), Z(1)), p.get)
     assertEquals(Z(1), p.get eval e)
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(1), ByteCodeMachine.interp(p.get))
   }
 
   @Test
@@ -73,5 +77,6 @@ class IfExprTest {
     val rp = reparse(p)
     println("         - repar: " + rp)    
     assertEquals(p.get, reparse(p))
+    assertEquals(Z(6), ByteCodeMachine.interp(p.get))
   }
 }
