@@ -4,14 +4,14 @@
 
 package org.zapto.jablo.myml
 
-import Ex.Env
+import Ex.{ Env, typerr }
 
 // Cheat a bit and let the operators fill in as ByteCode instructions too, sharing the definitions betwee
 // abstract syntax tree interpreter and the bytecode interpreter.
 
-abstract class Op(val infix: String, val mkEx: (Ex, Ex) => Ex, val eval: (Const, Const) => Const) extends ByteCode {
+abstract class Op(val infix: String, val mkEx: (Ex, Ex) => Ex, val eval: (Const, Const) => Const) extends ByteCode with ExHelper {
   // bytecode intepretation  of the operator
-  def exec(stack: MStack, env: BCScope): Store = {
+  final def exec(stack: MStack, env: BCScope): Store = {
     val (v2, s1) = pop(stack)
     val (v1, s2) = pop(s1)
     (s2.push(eval(v1, v2)), env, none)
@@ -19,9 +19,18 @@ abstract class Op(val infix: String, val mkEx: (Ex, Ex) => Ex, val eval: (Const,
 }
 abstract class UnOp(val infix: String, val mkEx: Ex => Ex, val eval: Const => Const) extends ByteCode {
   // bytecode intepretation  of the operator
-  def exec(stack: MStack, env: BCScope): Store = {
+  final def exec(stack: MStack, env: BCScope): Store = {
     val (v1, s1) = pop(stack)
     (s1.push(eval(v1)), env, none)
+  }
+}
+abstract class Op3(val infix: String, val mkEx: (Ex, Ex, Ex) => Ex, val eval: (Const, Const, Const) => Const) extends ByteCode {
+  // bytecode intepretation  of the operator
+  final def exec(stack: MStack, env: BCScope): Store = {
+    val (v3, s1) = pop(stack)
+    val (v2, s2) = pop(stack)
+    val (v1, s3) = pop(s1)
+    (s2.push(eval(v1, v2, v3)), env, none)
   }
 }
 
@@ -54,3 +63,33 @@ case object OCdr extends UnOp("cdr", Cdr, (c) => c match {
   case ConsCell(_, b) => b
 })
 
+case object OSubStr extends Op3("substr", SubStr, (a, b, c) => {
+  val s: String = a match {
+    case Str(s) => s
+    case _      => typerr("Expected string", a)
+  }
+  val from: Int = b match {
+    case Z(b) => b.intValue
+    case _    => typerr("Expected int", b)
+  }
+  val to: Int = b match {
+    case Z(c) => c.intValue
+    case _    => typerr("Expected int", c)
+  }
+  Str(s.substring(from, to))
+})
+
+case object OTrimStr extends UnOp("trim", TrimStr, (c) => {
+  c match {
+    case Str(s) => Str(s.trim)
+    case _      => typerr("Expected string", c)
+  }
+})
+case object OStrLen extends UnOp("strlen", StrLen, (c) => {
+  c match {
+    case Str(s) => Z(s.length)
+    case _      => typerr("Expected string", c)
+  }
+})
+
+case object OToStr extends UnOp("tostr", ToStr, (p) => Str(p.infix))

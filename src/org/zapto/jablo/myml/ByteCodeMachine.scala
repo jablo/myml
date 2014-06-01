@@ -6,7 +6,7 @@
 
 package org.zapto.jablo.myml
 
-import Ex.{ Env, MutEnv }
+import Ex.{ Env, MutEnv, err, typerr }
 import scala.annotation.tailrec
 import scala.collection.immutable.Stack
 import scala.collection._
@@ -77,32 +77,37 @@ abstract class ByteCode extends ExHelper {
   type MStack = Stack[Const]
   type Store = (MStack, BCScope, List[ByteCode])
   def exec(stack: Stack[Const], env: BCScope): Store;
-  protected def pop(s: MStack): (Const, MStack) = (s.top, s.pop)
+  protected def pop(s: MStack): (Const, MStack) = (s.top, s.pop) // pop as it should have been. Sheesh.
   protected val none = List[ByteCode]()
-}
-
-case class Lookup(n: String) extends ByteCode {
-  def exec(stack: MStack, env: BCScope): Store = {
-    val v = env get n
-    v match {
-      case None    => err("Variable not found " + n)
-      case Some(c) => (stack.push(c), env, none)
-    }
-  }
 }
 
 case class Push(c: Const) extends ByteCode {
   def exec(stack: MStack, env: BCScope): Store = (stack.push(c), env, none)
 }
 
-case class MakeClosure() extends ByteCode {
+case object Lookup extends ByteCode {
+  def exec(stack: MStack, env: BCScope): Store = {
+    val (nc, s1) = pop(stack)
+    val n = nc match {
+      case Str(s) => s
+      case _ => typerr("Extected string", nc)
+    }
+    val v = env get n
+    v match {
+      case None    => err("Variable not found " + n)
+      case Some(c) => (s1.push(c), env, none)
+    }
+  }
+}
+
+case object MakeClosure extends ByteCode {
   def exec(stack: MStack, env: BCScope): Store = {
     val (Subr(args, code, _), s1) = pop(stack)
     (s1.push(Subr(args, code, env)), env, none)
   }
 }
 
-case class Call extends ByteCode {
+case object Call extends ByteCode {
   def exec(stack: MStack, env: BCScope): Store = {
     val (subrorclos, s1) = pop(stack)
     subrorclos match {
@@ -112,7 +117,7 @@ case class Call extends ByteCode {
         val s2 = s1 drop n
         (s2, fenv ++ argvalpairs, code)
       case Clo(args, body, env1) =>  
-        // Cheating a bit - retrofit a Clo(...) created through direct interpretation into a copmiled bytecode function        
+        // Cheating a bit - retrofit a Clo(...) created through direct interpretation into a compiled bytecode function        
         val code = body.bytecode
         val n = args size
         val argvalpairs = (args reverse) zip (s1 take n)
@@ -122,7 +127,7 @@ case class Call extends ByteCode {
   }
 }
 
-case class Cond extends ByteCode {
+case object Cond extends ByteCode {
   def exec(stack: MStack, env: BCScope): Store = {
     val (test, s1) = pop(stack)
     val (Code(fcode), s2) = pop(s1)
@@ -131,26 +136,26 @@ case class Cond extends ByteCode {
   }
 }
 
-case class RecEnv() extends ByteCode {
+case object RecEnv extends ByteCode {
   def exec(stack: MStack, env: BCScope): Store = {
     (stack, BCMutEnv(env), none)
   }
 }
 
-case class Assign(n: String) extends ByteCode {
+case object Assign extends ByteCode {
   def exec(stack: MStack, env: BCScope): Store = {
-    val (v, s1) = pop(stack)
-    (s1, env + (n, v), none)
+    val (nc, s1) = pop(stack)
+    val (v, s2) = pop(s1)
+    val n = nc match {
+      case Str(s) => s
+      case _ => typerr("Expected string", nc)
+    }
+    (s2, env + (n, v), none)
   }
 }
 
-case class SubStrIns extends ByteCode { def exec(stack: MStack, env: BCScope): Store = throw new RuntimeException("not implemented") }
-case class TrimStrIns extends ByteCode { def exec(stack: MStack, env: BCScope): Store = throw new RuntimeException("not implemented") }
-case class StrLenIns extends ByteCode { def exec(stack: MStack, env: BCScope): Store = throw new RuntimeException("not implemented") }
-case class ToStrIns extends ByteCode { def exec(stack: MStack, env: BCScope): Store = throw new RuntimeException("not implemented") }
+case object NotImplemented extends ByteCode { def exec(stack: MStack, env: BCScope): Store = throw new RuntimeException("not implemented") }
 
-case class NotImplemented extends ByteCode { def exec(stack: MStack, env: BCScope): Store = throw new RuntimeException("not implemented") }
-
-case class ErrIns extends ByteCode {
+case object ErrIns extends ByteCode {
   def exec(stack: MStack, env: BCScope): Store = throw new RuntimeException(stack.pop toString)
 }

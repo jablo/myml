@@ -4,15 +4,12 @@
 
 package org.zapto.jablo.myml
 
-import Ex.Env
+import Ex.{Env, err, typerr}
 import scala.collection._
 import scala.annotation.tailrec
 import Ex.interp
 
 trait ExHelper {
-  final def typerr(s: String, e: Ex): Nothing = throw new TypeErrorException(s + " in: " + e.infix)
-  final def err(s: String, e: Ex): Nothing = throw new MyMLException(s + " " + e.infix)
-  final def err(s: String): Nothing = throw new MyMLException(s)
   final implicit def booleanToConst(b: Boolean): Const = if (b) True else False
   final implicit def bigintToConst(b: BigInt): Const = Z(b)
   final implicit def stringToConst(s: String): Const = Str(s)
@@ -46,6 +43,10 @@ object Ex {
   type Env = scala.collection.Map[String, Const]
   type MutEnv = scala.collection.mutable.Map[String, Const]
 
+  final def typerr(s: String, e: Ex): Nothing = throw new TypeErrorException(s + " in: " + e.infix)
+  final def err(s: String, e: Ex): Nothing = throw new MyMLException(s + " " + e.infix)
+  final def err(s: String): Nothing = throw new MyMLException(s)
+
   // Direct interpretation by walking the abstract syntax tree
   @tailrec
   final def interp(e: Ex, env: Env): Const = {
@@ -58,7 +59,7 @@ object Ex {
 
 case class ErrorEx(n: String) extends Ex {
   override def step(e: Env): EvalStep = throw new MyMLException("Error: " + n)
-  override val bytecode = List(Push(Str(n)), ErrIns())
+  override val bytecode = List(Push(Str(n)), ErrIns)
   override def infix = "error(" + n + ")"
 }
 
@@ -67,7 +68,7 @@ case class Var(n: String) extends Ex {
     case None    => err("Unknown variable", this)
     case Some(v) => Next(v, e)
   }
-  override val bytecode = List(Lookup(n))
+  override val bytecode = List(Push(n), Lookup)
   override def infix = n
 }
 
@@ -80,14 +81,19 @@ case class Par(e: Ex) extends Ex {
 // Unary operator
 abstract class Un(e1: Ex, op: UnOp) extends Ex {
   override def step(e: Env): EvalStep = op.eval(interp(e1, e))
-  override val bytecode = e1.bytecode ++ List(op)
+  override val bytecode = e1.bytecode :+ op
   override def infix = op.infix + e1.infix
 }
-
 // Binary operator
 abstract class Bin(e1: Ex, e2: Ex, op: Op) extends Ex {
   override def step(e: Env): EvalStep = op eval (interp(e1, e), interp(e2, e))
-  override val bytecode = e1.bytecode ++ e2.bytecode ++ List(op)
+  override val bytecode = e1.bytecode ++ e2.bytecode :+ op
+  override def infix = e1.infix + op.infix + e2.infix
+}
+// Ternary operator
+abstract class Tri(e1: Ex, e2: Ex, e3: Ex, op: Op3) extends Ex {
+  override def step(e: Env): EvalStep = op eval (interp(e1, e), interp(e2, e), interp(e2, e))
+  override val bytecode = e1.bytecode ++ e2.bytecode ++ e3.bytecode :+ op
   override def infix = e1.infix + op.infix + e2.infix
 }
 
@@ -113,45 +119,21 @@ case class Cons(e1: Ex, e2: Ex) extends Bin(e1, e2, OCons)
 case class Car(e1: Ex) extends Un(e1, OCar)
 case class Cdr(e1: Ex) extends Un(e1, OCdr)
 
-case class SubStr(e1: Ex, e2: Ex, e3: Ex) extends Ex {
-  override def step(e: Env) = {
-    val e1v = interp(e1, e)
-    val e2v = interp(e2, e)
-    val e3v = interp(e3, e)
-    (e1v, e2v, e3v) match {
-      case (Str(s), Z(a), Z(b)) => Str(s.substring(a.intValue, b.intValue))
-      case _                    => typerr("string-Z-Z", Cons(e1, Cons(e2, Cons(e3, MNil))))
-    }
-  }
-  override val bytecode = e1.bytecode ++ e2.bytecode ++ e3.bytecode ++ List(SubStrIns())
-  def infix = "sub(" + e1 + ", " + e2 + ", " + e3 + ")"
+case class SubStr(e1: Ex, e2: Ex, e3: Ex) extends Tri(e1, e2, e3, OSubStr) {
+  override val bytecode = e1.bytecode ++ e2.bytecode ++ e3.bytecode :+ OSubStr
+  override def infix = "sub(" + e1 + ", " + e2 + ", " + e3 + ")"
 }
-case class TrimStr(e1: Ex) extends Ex {
-  override def step(e: Env) = {
-    val e1v = interp(e1, e)
-    e1v match {
-      case Str(s) => Str(s.trim)
-      case _      => typerr("string", e1)
-    }
-  }
-  override val bytecode = e1.bytecode ++ List(TrimStrIns())
-  def infix = "trim(" + e1 + ")"
+case class TrimStr(e1: Ex) extends Un(e1, OTrimStr) {
+  override val bytecode = e1.bytecode :+ OTrimStr
+  override def infix = "trim(" + e1 + ")"
 }
-case class StrLen(e1: Ex) extends Ex {
-  override def step(e: Env) = {
-    val e1v = interp(e1, e)
-    e1v match {
-      case Str(s) => Z(s.length)
-      case _      => typerr("string", e1)
-    }
-  }
-  override lazy val bytecode = e1.bytecode ++ List(StrLenIns())
-  def infix = "strlen(" + e1 + ")"
+case class StrLen(e1: Ex) extends Un(e1, OStrLen) {
+  override val bytecode = e1.bytecode :+ OStrLen
+  override def infix = "strlen(" + e1 + ")"
 }
-case class ToStr(e1: Ex) extends Ex {
-  override def step(e: Env) = Str(interp(e1, e).infix)
-  override val bytecode = e1.bytecode ++ List(ToStrIns())
-  def infix = "tostr(" + e1 + ")"
+case class ToStr(e1: Ex) extends Un(e1, OToStr) {
+  override val bytecode = e1.bytecode :+ OToStr
+  override def infix = "tostr(" + e1 + ")"
 }
 
 case class Ife(e1: Ex, e2: Ex, e3: Ex) extends Ex {
@@ -163,13 +145,13 @@ case class Ife(e1: Ex, e2: Ex, e3: Ex) extends Ex {
       case _     => typerr("boolean", e1)
     }
   }
-  override val bytecode = List[ByteCode](Push(Code(e2.bytecode)), Push(Code(e3.bytecode))) ++ e1.bytecode ++ List(Cond())
+  override val bytecode = List(Push(Code(e2.bytecode)), Push(Code(e3.bytecode))) ++ e1.bytecode :+ Cond
   def infix = "if " + e1.infix + " then " + e2.infix + " else " + e3.infix
 }
 
 case class Fun(fargs: List[String], body: Ex) extends Ex {
   def step(e: Env) = Clo(fargs, body, e)
-  override val bytecode = List(Push(Subr(fargs, body.bytecode, NilScope())), MakeClosure())
+  override val bytecode = List(Push(Subr(fargs, body.bytecode, NilScope())), MakeClosure)
   def infix = "fun " + fargs.mkString("(", ", ", ")") + " => " + body.infix
 }
 
@@ -187,7 +169,7 @@ case class App(fexp: Ex, args: List[Ex]) extends Ex {
   override val bytecode = {
     val argscode: List[ByteCode] = (args.map((ex) => ex.bytecode)).flatten
     val fcode = fexp.bytecode
-    argscode ++ fcode ++ List(Call())
+    argscode ++ fcode :+ Call
   }
   def infix = (fexp match {
     case Var(_) => fexp.infix
@@ -205,8 +187,8 @@ case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
   }
   val bytecode = {
     val argscode: List[ByteCode] = (args.map((ex) => ex.bytecode)).flatten
-    val asgncode = fargs.reverse.map(Assign(_))
-    List(RecEnv()) ++ argscode ++ asgncode ++ body.bytecode
+    val asgncode = fargs.reverse.map((n) => List(Push(n), Assign)).flatten
+    RecEnv :: argscode ++ asgncode ++ body.bytecode
   }
   def infix = "let* " + ((fargs zip args) map (p => { val (a, e) = p; a + "=" + e.infix })).mkString("; ") + " in " + body.infix
 }
@@ -214,25 +196,25 @@ case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
 // For the REPL 
 case class Def(n: String, e: Ex) extends Ex {
   def step(env: Env): EvalStep = ReplDef(n, interp(e, env))
-  val bytecode = List(NotImplemented())
+  val bytecode = List(NotImplemented)
   def infix = "def " + n + "=" + e.infix
 }
 
 case class Undef(n: String) extends Ex {
   def step(env: Env): EvalStep = ReplUnDef(n)
-  val bytecode = List(NotImplemented())
+  val bytecode = List(NotImplemented)
   def infix = "undef " + n;
 }
 
 case class Load(n: String) extends Ex {
   def step(env: Env): EvalStep = ReplLoad(n)
-  val bytecode = List(NotImplemented())
+  val bytecode = List(NotImplemented)
   def infix = "load " + n;
 }
 
 case class ReLoad() extends Ex {
   def step(env: Env): EvalStep = ReplReLoad()
-  val bytecode = List(NotImplemented())
+  val bytecode = List(NotImplemented)
   def infix = "reload"
 }
 

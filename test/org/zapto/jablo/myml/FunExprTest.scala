@@ -35,7 +35,7 @@ class FunExprTest {
     bcev match {
       case Subr(args, code, _) => 
         assertEquals(args, List("x"))
-        assertEquals(code, List(Push(Z(2)), Lookup("x"), OMul))
+        assertEquals(code, List(Push(Z(2)), Push(Str("x")), Lookup, OMul))
       case _ => fail("Woups")
     }
     
@@ -66,7 +66,7 @@ class FunExprTest {
     assertEquals(pexp, p.get)
     assertEquals(Clo(List("x"), body, Map()), p.get.eval(Map()))
     assertEquals(p.get, reparse(p))
-    assertEquals(Subr(List("x"), List(Push(Z(5)),Lookup("x"),OMul,Push(Z(2)),OAdd), BCEnv(NilScope(), e)), ByteCodeMachine.interp(p.get))
+    assertEquals(Subr(List("x"), List(Push(Z(5)),Push(Str("x")),Lookup,OMul,Push(Z(2)),OAdd), BCEnv(NilScope(), e)), ByteCodeMachine.interp(p.get))
   }
 
   @Test

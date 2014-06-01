@@ -4,7 +4,7 @@
 
 package org.zapto.jablo.myml
 
-import Ex.Env
+import Ex.{Env, err, typerr}
 
 abstract class Const extends Ex {
   override final def step(e: Env): EvalStep = this
