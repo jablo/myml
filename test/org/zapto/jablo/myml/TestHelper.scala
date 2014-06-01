@@ -5,7 +5,7 @@
 
 package org.zapto.jablo.myml
 
-object Sculla {
+object TestHelper {
   val calc = new Parser()
   val e = Map[String, Const]();
   def check(p: calc.ParseResult[Ex]): calc.ParseResult[Ex] = {

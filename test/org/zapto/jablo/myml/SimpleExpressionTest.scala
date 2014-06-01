@@ -6,10 +6,10 @@ package org.zapto.jablo.myml
 
 import org.junit._
 import Assert._
-import Sculla.calc
-import Sculla.e
-import Sculla.check
-import Sculla.reparse
+import TestHelper.calc
+import TestHelper.e
+import TestHelper.check
+import TestHelper.reparse
 
 class SimpleExpressionTest {
   @Before
