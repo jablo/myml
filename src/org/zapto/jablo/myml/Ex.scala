@@ -196,25 +196,25 @@ case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
 // For the REPL 
 case class Def(n: String, e: Ex) extends Ex {
   def step(env: Env): EvalStep = ReplDef(n, interp(e, env))
-  val bytecode = List(NotImplemented)
+  val bytecode = e.bytecode ++ List(Push(n), Assign)
   def infix = "def " + n + "=" + e.infix
 }
 
 case class Undef(n: String) extends Ex {
   def step(env: Env): EvalStep = ReplUnDef(n)
-  val bytecode = List(NotImplemented)
+  val bytecode = List(Push(ReplUnDef(n)))
   def infix = "undef " + n;
 }
 
 case class Load(n: String) extends Ex {
   def step(env: Env): EvalStep = ReplLoad(n)
-  val bytecode = List(NotImplemented)
+  val bytecode = List(Push(ReplLoad(n)))
   def infix = "load " + n;
 }
 
 case class ReLoad() extends Ex {
   def step(env: Env): EvalStep = ReplReLoad()
-  val bytecode = List(NotImplemented)
+  val bytecode = List(Push(ReplReLoad()))
   def infix = "reload"
 }
 

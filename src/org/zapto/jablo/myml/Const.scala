@@ -54,6 +54,13 @@ object Const {
   }
 }
 
+// The empty value
+case object MVoid extends Const {
+  override def infix: String = "void"
+  override def ==(c: Const): Const = MVoid
+  override def !=(c: Const): Const = MVoid
+}
+
 // For list representation
 case object MNil extends Const {
   override def infix: String = "nil"

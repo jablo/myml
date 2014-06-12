@@ -10,7 +10,7 @@ import java.io.{ FileReader, FileNotFoundException, IOException }
 import Ex.interp
 
 object Repl {
-  val env = mutable.Map[String, Const]()
+  val env = BCMutEnv(NilScope(), mutable.Map[String, Const]())
   val calc = new Parser()
 
   def check(p: calc.ParseResult[Ex]): calc.ParseResult[Ex] = {
@@ -42,11 +42,11 @@ object Repl {
     p.get map (ep(_, env))
   }
 
-  def ep(exp: Ex, env: mutable.Map[String, Const]): Unit = {
+  def ep(exp: Ex, env: BCScope): Unit = {
     try {
       println("Parsed: " + exp)
       println(" Infix: " + (exp infix))
-      val ev = interp(exp, env)
+      val ev = ByteCodeMachine.interp(exp.bytecode, env) // interp(exp, env)
       println("Result: " + ev)
       println(" Infix: " + ev.infix)
       ev match {
@@ -85,7 +85,7 @@ object Repl {
    * @param args the command line arguments
    */
   def main(args: Array[String]): Unit = {
-    readresource("preload.myml")
+//    readresource("preload.myml")
     repl
   }
 }

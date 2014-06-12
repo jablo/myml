@@ -14,15 +14,25 @@ import scala.collection._
 abstract class BCScope {
   def get(n: String): Option[Const]
   def +(n: String, e: Const): BCScope
+  def -(n: String): BCScope
   def ++(es: List[(String, Const)]): BCScope
+  def +=(p: Pair[String, Const]): BCScope
+  def -=(n: String): BCScope
+  def clear: Unit
   def keys: Iterable[String]
 }
+
 case class NilScope extends BCScope {
   def get(s: String): Option[Const] = None
   def +(n: String, e: Const): BCScope = BCEnv(this, Map() + Pair(n, e))
+  def -(n: String): BCScope = throw new RuntimeException("Cant undefine from empty scope")
   def ++(es: List[(String, Const)]): BCScope = BCEnv(this, Map() ++ es)
+  def +=(p: Pair[String,Const]): BCScope = throw new RuntimeException("Not supported on immutable empty")
+  def -=(n: String): BCScope = throw new RuntimeException("Not supported on immutable empty")
+  def clear: Unit = throw new RuntimeException("Not supported on immutable empty")
   def keys = List()
 }
+
 case class BCEnv(outer: BCScope = NilScope(), val env: Env = Map()) extends BCScope {
   def get(n: String): Option[Const] = {
     val v = env get n
@@ -32,9 +42,14 @@ case class BCEnv(outer: BCScope = NilScope(), val env: Env = Map()) extends BCSc
     }
   }
   def +(n: String, e: Const): BCScope = BCEnv(outer, env + Pair(n, e))
+  def -(n: String): BCScope = BCEnv(outer, env - n)
   def ++(es: List[(String, Const)]): BCScope = BCEnv(outer, env ++ es)
+  def +=(p: Pair[String,Const]): BCScope = throw new RuntimeException("Not supported on immutable scopes")
+  def -=(n: String): BCScope = throw new RuntimeException("Not supported on immutable empty")
+  def clear: Unit = throw new RuntimeException("Not supported on immutable empty")
   def keys = env.keys
 }
+
 case class BCMutEnv(outer: BCScope, val env: MutEnv = mutable.Map()) extends BCScope {
   def get(n: String): Option[Const] = {
     val v = env get n
@@ -44,7 +59,11 @@ case class BCMutEnv(outer: BCScope, val env: MutEnv = mutable.Map()) extends BCS
     }
   }
   def +(n: String, e: Const): BCScope = { env += Pair(n, e); this }
+  def -(n: String): BCScope = { env -= n; this }
   def ++(es: List[(String, Const)]): BCScope = { env ++= es; this }
+  def +=(p: Pair[String,Const]): BCScope = { env += Pair(p._1, p._2); this }
+  def -=(n: String): BCScope = { env -= n; this }
+  def clear: Unit = env.clear
   def keys = env.keys
 }
 
@@ -53,16 +72,16 @@ class ByteCodeMachine {
 }
 
 object ByteCodeMachine {
-  final def interp(e: Ex, env: Env = Map()): Const = interp(e.bytecode, env)
-  final def interp(insns: List[ByteCode], env: Env): Const = {
+  final def interp(e: Ex, env: BCScope = NilScope()): Const = interp(e.bytecode, env)
+  final def interp(insns: List[ByteCode], bcenv: BCScope): Const = {
     val stack = new Stack[Const]()
-    val bcenv = BCEnv(NilScope(), env)
+    //    val bcenv = BCEnv(NilScope(), benv)
     interp1(stack, insns, bcenv)
   }
   @tailrec
   final def interp1(stack: Stack[Const], insns: List[ByteCode], env: BCScope): Const = {
     insns match {
-      case Nil => stack.top
+      case Nil => if (!stack.isEmpty) stack.top else MVoid
       case insn :: insns1 =>
         println("Exec: " + insn)
         val (stack1, scope1, morecode) = insn.exec(stack, env)
@@ -90,7 +109,7 @@ case object Lookup extends ByteCode {
     val (nc, s1) = pop(stack)
     val n = nc match {
       case Str(s) => s
-      case _ => typerr("Extected string", nc)
+      case _      => typerr("Extected string", nc)
     }
     val v = env get n
     v match {
@@ -109,15 +128,15 @@ case object MakeClosure extends ByteCode {
 
 case object Call extends ByteCode {
   def exec(stack: MStack, env: BCScope): Store = {
-    val (subrorclos, s1) = pop(stack)
-    subrorclos match {
+    val (subr, s1) = pop(stack)
+    subr match {
       case Subr(fargs, code, fenv) =>
         val n = fargs size
         val argvalpairs = (fargs reverse) zip (s1 take n)
         val s2 = s1 drop n
         (s2, fenv ++ argvalpairs, code)
-      case Clo(args, body, env1) =>  
-        // Cheating a bit - retrofit a Clo(...) created through direct interpretation into a compiled bytecode function        
+      // Cheating a bit - retrofit a Clo(...) created through direct interpretation into a compiled bytecode function        
+      case Clo(args, body, env1) =>
         val code = body.bytecode
         val n = args size
         val argvalpairs = (args reverse) zip (s1 take n)
@@ -137,9 +156,7 @@ case object Cond extends ByteCode {
 }
 
 case object RecEnv extends ByteCode {
-  def exec(stack: MStack, env: BCScope): Store = {
-    (stack, BCMutEnv(env), none)
-  }
+  def exec(stack: MStack, env: BCScope): Store = (stack, BCMutEnv(env), none)
 }
 
 case object Assign extends ByteCode {
@@ -148,14 +165,23 @@ case object Assign extends ByteCode {
     val (v, s2) = pop(s1)
     val n = nc match {
       case Str(s) => s
-      case _ => typerr("Expected string", nc)
+      case _      => typerr("Expected string", nc)
     }
     (s2, env + (n, v), none)
   }
 }
 
-case object NotImplemented extends ByteCode { def exec(stack: MStack, env: BCScope): Store = throw new RuntimeException("not implemented") }
+case object UnAssign extends ByteCode {
+  def exec(stack: MStack, env: BCScope): Store = {
+    val (Str(n), s1) = pop(stack)
+    (s1, env - n, none)
+  }
+}
 
 case object ErrIns extends ByteCode {
   def exec(stack: MStack, env: BCScope): Store = throw new RuntimeException(stack.pop toString)
+}
+
+case object NotImplemented extends ByteCode {
+  def exec(stack: MStack, env: BCScope): Store = throw new RuntimeException("not implemented")
 }
