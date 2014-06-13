@@ -1,4 +1,10 @@
 def Y  = fun(fu) => (fun(recur) => recur(recur)) (fun(recur) => fun(x) => fu(recur(recur))(x));
+def Y2  = fun(f) => (fun(r) => r(r)) (fun(r) => fun(x) => f(r(r))(x));
+
+// comment
+// G = λf.λn.IF (= n 0) 1 (* n (f (- n 1 )))
+def G = fun(f) => fun(n) => if n=0 then 1 else n*f(n-1);
+def yfac = Y2(G);
 
 def fac = fun(n) => 
     let* fac2 = fun(n,acc) => if n=0 then acc else fac2(n-1, n*acc)

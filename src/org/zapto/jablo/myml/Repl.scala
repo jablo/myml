@@ -7,7 +7,6 @@ package org.zapto.jablo.myml
 import scala.collection._
 import scala.io.Source
 import java.io.{ FileReader, FileNotFoundException, IOException }
-import Ex.interp
 
 object Repl {
   val env = BCMutEnv(NilScope(), mutable.Map[String, Const]())
@@ -46,7 +45,7 @@ object Repl {
     try {
       println("Parsed: " + exp)
       println(" Infix: " + (exp infix))
-      val ev = ByteCodeMachine.interp(exp.bytecode, env) // interp(exp, env)
+      val ev = ByteCodeMachine.interp(Compiler.compile(exp), env)
       println("Result: " + ev)
       println(" Infix: " + ev.infix)
       ev match {

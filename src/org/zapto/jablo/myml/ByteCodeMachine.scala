@@ -1,15 +1,9 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-
 package org.zapto.jablo.myml
 
-import Ex.{ Env, MutEnv, err, typerr }
 import scala.annotation.tailrec
 import scala.collection.immutable.Stack
 import scala.collection._
+import Ex.{ Env, MutEnv }
 
 abstract class BCScope {
   def get(n: String): Option[Const]
@@ -67,12 +61,8 @@ case class BCMutEnv(outer: BCScope, val env: MutEnv = mutable.Map()) extends BCS
   def keys = env.keys
 }
 
-class ByteCodeMachine {
-
-}
-
 object ByteCodeMachine {
-  final def interp(e: Ex, env: BCScope = NilScope()): Const = interp(e.bytecode, env)
+  final def interp(e: Ex, env: BCScope = NilScope()): Const = interp(Compiler.compile(e), env)
   final def interp(insns: List[ByteCode], bcenv: BCScope): Const = {
     val stack = new Stack[Const]()
     //    val bcenv = BCEnv(NilScope(), benv)
@@ -85,7 +75,6 @@ object ByteCodeMachine {
       case insn :: insns1 =>
         println("Exec: " + insn)
         val (stack1, scope1, morecode) = insn.exec(stack, env)
-        println("    Stack: " + (stack1 take 6) + "...")
         val newcode = morecode ++ insns1
         interp1(stack1, newcode, scope1)
     }
@@ -137,7 +126,7 @@ case object Call extends ByteCode {
         (s2, fenv ++ argvalpairs, code)
       // Cheating a bit - retrofit a Clo(...) created through direct interpretation into a compiled bytecode function        
       case Clo(args, body, env1) =>
-        val code = body.bytecode
+        val code = Compiler.compile(body)
         val n = args size
         val argvalpairs = (args reverse) zip (s1 take n)
         val s2 = s1 drop n

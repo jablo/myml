@@ -4,11 +4,9 @@
 
 package org.zapto.jablo.myml
 
-import Ex.{Env, err, typerr}
+import Ex.Env
 
 abstract class Const extends Ex {
-  override final def step(e: Env): EvalStep = this
-  override final val bytecode = List(Push(this))
   protected def undef(op: String, c: Const): Nothing = throw new UndefinedOperationException("Undefined operation " + this + op + c)
   protected def undef(op: String): Nothing = throw new UndefinedOperationException("Undefined operation " + op + " " + this)
   def unary_- : Const = undef("-")
@@ -125,14 +123,14 @@ case class Str(s: String) extends Const {
   }
 }
 
-// Closures
+// Closures for the direct interpreter
 case class Clo(fargs: List[String], body: Ex, env: Env) extends Const {
   // avoid printing environment values - letrec creates cyclic environment
   override def infix = Fun(fargs, body).infix + "@" + (env keys).mkString("{", ",", "}")
   override def toString = "Clo(" + fargs + ", " + body + ", " + (env keys).mkString("{", ",", "}") + ")"
 }
 
-// Subroutine calls on the stack for the bytecode interpreter 
+// Closures for the bytecode interpreter 
 case class Subr(fargs: List[String], code: List[ByteCode], env: BCScope) extends Const {
   // avoid printing environment values - letrec creates cyclic environment
   override def infix = fargs.mkString("[", ",", "] ") + code.mkString("[", ",", "]")

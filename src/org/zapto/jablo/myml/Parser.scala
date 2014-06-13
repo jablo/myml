@@ -7,6 +7,12 @@ package org.zapto.jablo.myml
 import scala.util.parsing.combinator.PackratParsers
 import scala.util.parsing.combinator._
 import Q.q
+import Un._
+import Bin._
+import Tri._
+import Op._
+import UnOp._
+import Op3._
 
 class Parser extends JavaTokenParsers with PackratParsers {
   type ExPar = PackratParser[Ex]
@@ -20,11 +26,13 @@ class Parser extends JavaTokenParsers with PackratParsers {
   lazy val expr: ExPar = error | cond | fun | let | letr | arith
 
   // REPL commands
-  lazy val repl: ExPar = "def" ~> assignornamedfun ^^ ((p) => { val (a, b) = p; Def(a, b) }) |
+  lazy val repl: ExPar = 
+    "//.*".r ^^ ((s) => Comment(s)) | 
+    "def" ~> assignornamedfun ^^ ((p) => { val (a, b) = p; Def(a, b) }) |
     "undef" ~> ident ^^ ((p) => Undef(p)) |
     "load" ~> stringLiteral ^^ ((p)=>Load(stripQuote(p))) |
     "reload" ^^ ((_)=>ReLoad()) |
-    "compile" ~> expr ^^ (Compile(_)) |
+    "compile" ~> repl ^^ (Compile(_)) |
     "run" ~> expr ^^ (Run(_)) | expr 
 
   // Control structures
@@ -37,10 +45,10 @@ class Parser extends JavaTokenParsers with PackratParsers {
   lazy val fun: ExPar = "fun" ~ "(" ~> repsep(ident, ",") ~ (")" ~ "=>" ~> expr) ^^ {
     case vs ~ b => Fun(vs, b)
   } | "fun" ~> namedfun ^^ { case (fnam, args, body) => LetR(List(fnam), List(Fun(args, body)), Var(fnam)) }
-  lazy val namedfun: PackratParser[(String,List[String],Ex)] = ident ~ ( "(" ~> repsep(ident, ",")) ~ (")" ~ "=>" ~> expr) ^^ {
+  lazy val namedfun: PackratParser[(String,List[String],Ex)] = ident ~ ( "(" ~> repsep(ident, ",")) ~ (")" ~ ( "=>" | "=" ) ~> expr) ^^ {
     case fnam ~ vs ~ b => (fnam,vs,b)
   }
-  lazy val let: ExPar = "let" ~> repsep(assign, ";") ~ ("in" ~> expr) ^^ {
+  lazy val let: ExPar = "let" ~> repsep(assignornamedfun, ";") ~ ("in" ~> expr) ^^ {
     case asgns ~ body => {
       val (args, exprs) = asgns.unzip
       App(Fun(args, body), exprs)

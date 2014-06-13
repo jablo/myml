@@ -6,7 +6,6 @@ package org.zapto.jablo.myml
 
 import Const.{ gcd, pow }
 import Q.q
-import Ex.{ err, typerr}
 
 case class Q(n: BigInt, d: BigInt) extends Const {
   require(d != 0)
