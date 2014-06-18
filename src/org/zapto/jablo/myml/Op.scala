@@ -12,8 +12,7 @@ import Tri._
 // abstract syntax tree interpreter and the bytecode interpreter.
 
 case class Op(val infix: String, val mkEx: (Ex, Ex) => Ex, val eval: (Const, Const) => Const) extends ByteCode {
-  // bytecode intepretation  of the operator
-  final def exec(stack: MStack, env: BCScope): Store = {
+  final def exec(stack: MStack, env: BCEnv): Store = {
     val (v2, s1) = pop(stack)
     val (v1, s2) = pop(s1)
     (s2.push(eval(v1, v2)), env, none)
@@ -26,23 +25,19 @@ object Op extends ExHelper {
   val OMul = Op("*", Mul, _ * _)
   val ODiv = Op("/", Div, _ / _)
   val OPot = Op("^", Pot, _ ** _)
-
   val OEq = Op("=", Equ, _ == _)
   val ONe = Op("<>", Neq, _ != _)
   val OLt = Op("<", Lt, _ < _)
   val OLe = Op("<=", Lte, _ <= _)
   val OGt = Op(">", Gt, _ > _)
   val OGe = Op(">=", Gte, _ >= _)
-
   val OAnd = Op("and", And, _ && _)
   val OOr = Op("or", Or, _ || _)
-
   val OCons = Op("::", Cons, ConsCell)
 }
 
 case class UnOp(val infix: String, val mkEx: Ex => Ex, val eval: Const => Const) extends ByteCode {
-  // bytecode intepretation  of the operator
-  final def exec(stack: MStack, env: BCScope): Store = {
+  final def exec(stack: MStack, env: BCEnv): Store = {
     val (v1, s1) = pop(stack)
     (s1.push(eval(v1)), env, none)
   }
@@ -50,38 +45,30 @@ case class UnOp(val infix: String, val mkEx: Ex => Ex, val eval: Const => Const)
 
 object UnOp extends ExHelper {
   val ONeg = UnOp("-", Neg, -_)
-
-  // boolean
   val ONot = UnOp("not ", Not, !_)
-
   val OCar = UnOp("car", Car, (c) => c match {
     case ConsCell(a, _) => a
   })
-
   val OCdr = UnOp("cdr", Cdr, (c) => c match {
     case ConsCell(_, b) => b
   })
-
   val OTrimStr = UnOp("trim", TrimStr, (c) => {
     c match {
       case Str(s) => Str(s.trim)
       case _      => typerr("Expected string", c)
     }
   })
-
   val OStrLen = UnOp("strlen", StrLen, (c) => {
     c match {
       case Str(s) => Z(s.length)
       case _      => typerr("Expected string", c)
     }
   })
-
   val OToStr = UnOp("tostr", ToStr, (p) => Str(p.infix))
 }
 
 case class Op3(val infix: String, val mkEx: (Ex, Ex, Ex) => Ex, val eval: (Const, Const, Const) => Const) extends ByteCode {
-  // bytecode intepretation  of the operator
-  final def exec(stack: MStack, env: BCScope): Store = {
+  final def exec(stack: MStack, env: BCEnv): Store = {
     val (v3, s1) = pop(stack)
     val (v2, s2) = pop(stack)
     val (v1, s3) = pop(s1)

@@ -131,7 +131,7 @@ case class Clo(fargs: List[String], body: Ex, env: Env) extends Const {
 }
 
 // Closures for the bytecode interpreter 
-case class Subr(fargs: List[String], code: List[ByteCode], env: BCScope) extends Const {
+case class Subr(fargs: List[String], code: List[ByteCode], env: BCEnv) extends Const {
   // avoid printing environment values - letrec creates cyclic environment
   override def infix = fargs.mkString("[", ",", "] ") + code.mkString("[", ",", "]")
   override def toString = "Subr(" + fargs.mkString("[", ",", "], ") + code.mkString("[", ",", "] @ ") + env.keys.mkString("{", ", ", "}")

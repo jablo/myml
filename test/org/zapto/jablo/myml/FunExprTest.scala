@@ -66,7 +66,7 @@ class FunExprTest {
     assertEquals(pexp, p.get)
     assertEquals(Clo(List("x"), body, Map()), p.get.eval(Map()))
     assertEquals(p.get, reparse(p))
-    assertEquals(Subr(List("x"), List(Push(Z(5)),Push(Str("x")),Lookup,OMul,Push(Z(2)),OAdd), BCEnv(NilScope(), e)), ByteCodeMachine.interp(p.get))
+    assertEquals(Subr(List("x"), List(Push(Z(5)),Push(Str("x")),Lookup,OMul,Push(Z(2)),OAdd), BCImmutEnv(NilScope(), e)), ByteCodeMachine.interp(p.get))
   }
 
   @Test

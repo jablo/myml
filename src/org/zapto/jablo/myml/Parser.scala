@@ -22,7 +22,7 @@ class Parser extends JavaTokenParsers with PackratParsers {
   type ProgPar = PackratParser[List[Ex]]
 
   // The MyML language parser
-  lazy val program: ProgPar = repsep(repl, ";") 
+  lazy val program: ProgPar = repsep(repl, ";".?) 
   lazy val expr: ExPar = error | cond | fun | let | letr | arith
 
   // REPL commands
@@ -33,8 +33,8 @@ class Parser extends JavaTokenParsers with PackratParsers {
     "load" ~> stringLiteral ^^ ((p)=>Load(stripQuote(p))) |
     "reload" ^^ ((_)=>ReLoad()) |
     "compile" ~> repl ^^ (Compile(_)) |
-    "run" ~> expr ^^ (Run(_)) | expr 
-
+    expr 
+  
   // Control structures
   lazy val error: ExPar = "error" ~ "(" ~> stringLiteral <~ ")" ^^ ((p:String)=>ErrorEx(stripQuote(p))) |
     "error" ~ "(" ~ ")" ^^ ((_)=>ErrorEx("")) | "error" ^^ ((_)=>ErrorEx(""))

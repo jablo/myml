@@ -9,7 +9,7 @@ import scala.io.Source
 import java.io.{ FileReader, FileNotFoundException, IOException }
 
 object Repl {
-  val env = BCMutEnv(NilScope(), mutable.Map[String, Const]())
+  val env = BCMutEnv(BCNilEnv(), mutable.Map[String, Const]())
   val calc = new Parser()
 
   def check(p: calc.ParseResult[Ex]): calc.ParseResult[Ex] = {
@@ -41,7 +41,7 @@ object Repl {
     p.get map (ep(_, env))
   }
 
-  def ep(exp: Ex, env: BCScope): Unit = {
+  def ep(exp: Ex, env: BCEnv): Unit = {
     try {
       println("Parsed: " + exp)
       println(" Infix: " + (exp infix))

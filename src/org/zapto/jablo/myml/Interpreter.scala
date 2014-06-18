@@ -10,45 +10,34 @@ import scala.collection._
 import org.zapto.jablo.myml.Ex._
 import scala.annotation.tailrec
 
-// A single step intepretation result - a constant or a new expression and environment to evaluate
-abstract sealed class EvalStep
-case class Done(r: Const) extends EvalStep
-case class Next(e: Ex, env: Env) extends EvalStep
-
 object Interpreter extends ExHelper {
-  @tailrec
+//  @tailrec can't use it - there are both tailrec call (in App(...)) and non-tailrec calls (everywhere else)
   final def interp(e: Ex, env: Env): Const = {
-    step(e, env) match {
-      case Done(r)        => r
-      case Next(e1, env1) => interp(e1, env1)
-    }
-  }
-  def step(e: Ex, env: Env): EvalStep = {
     e match {
       case ErrorEx(n) => throw new MyMLException("Error: " + n)
       case Var(n) => env get n match {
         case None    => err("Unknown variable", e)
-        case Some(v) => Next(v, env)
+        case Some(v) => interp(v, env)
       }
-      case Par(e1)         => step(e1, env)
-      case Un(e1, op)      => Done(op.eval(interp(e1, env)))
-      case Bin(e1, e2, op) => Done(op.eval(interp(e1, env), interp(e2, env)))
+      case Par(e1)         => interp(e1, env)
+      case Un(e1, op)      => op.eval(interp(e1, env))
+      case Bin(e1, e2, op) => op.eval(interp(e1, env), interp(e2, env))
       case Ife(e1, e2, e3) => {
         val test = interp(e1, env)
         test match {
-          case True  => Next(e2, env)
-          case False => Next(e3, env)
+          case True  => interp(e2, env)
+          case False => interp(e3, env)
           case _     => typerr("boolean", e1)
         }
       }
-      case Fun(fargs, body) => Done(Clo(fargs, body, env))
+      case Fun(fargs, body) => Clo(fargs, body, env)
       case App(fexp, args) => {
         val fun = interp(fexp, env)
         fun match {
           case _@ Clo(fargs, body, fenv) =>
             val actarg = args map ((arg: Ex) => interp(arg, env))
             val env2 = fenv ++ Map(fargs zip actarg: _*)
-            Next(body, env2)
+            interp(body, env2)
           case _ => typerr("Not a function", fexp)
         }
       }
@@ -57,16 +46,15 @@ object Interpreter extends ExHelper {
         val letrecenv = mutable.Map[String, Const](env toList: _*)
         val actarg = args map (interp(_, letrecenv));
         letrecenv ++= fargs zip actarg
-        Next(body, letrecenv)
+        interp(body, letrecenv)
       }
-      case Def(n, e)  => Done(ReplDef(n, interp(e, env)))
-      case Undef(n)   => Done(ReplUnDef(n))
-      case Load(n)    => Done(ReplLoad(n))
-      case ReLoad()   => Done(ReplReLoad())
-      case Compile(e) => Done(Code(Compiler.compile(e)))
-      case Run(e)     => Next(e, env)
-      case Comment(_) => Done(MVoid)
-      case c: Const   => Done(c)
+      case Def(n, e)  => ReplDef(n, interp(e, env))
+      case Undef(n)   => ReplUnDef(n)
+      case Load(n)    => ReplLoad(n)
+      case ReLoad()   => ReplReLoad()
+      case Compile(e) => Code(Compiler.compile(e))
+      case Comment(_) => MVoid
+      case c: Const   => c
     }
   }
 }

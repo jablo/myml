@@ -128,10 +128,6 @@ case class Compile(e: Ex) extends Ex {
   def infix = "compile " + e.infix;
 }
 
-case class Run(e: Ex) extends Ex {
-  def infix = "compile " + e.infix;
-}
-
 case class Comment(s: String) extends Ex {
   def infix = "// " + s;
 }
