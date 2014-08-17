@@ -4,6 +4,7 @@
 
 package org.zapto.jablo.myml
 
+import scala.language.postfixOps
 import scala.collection._
 import UnOp._
 import Op._

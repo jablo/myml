@@ -4,6 +4,7 @@
 
 package org.zapto.jablo.myml
 
+import scala.language.postfixOps
 import Ex.Env
 
 abstract class Const extends Ex {

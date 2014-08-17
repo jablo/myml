@@ -4,12 +4,13 @@
 
 package org.zapto.jablo.myml
 
+import scala.language.postfixOps
 import scala.collection._
 import scala.io.Source
 import java.io.{ FileReader, FileNotFoundException, IOException }
 
 object Repl {
-  val env = BCMutEnv(BCNilEnv(), mutable.Map[String, Const]())
+  val env = BCMutEnv(BCNilEnv, mutable.Map[String, Const]())
   val calc = new Parser()
 
   def check(p: calc.ParseResult[Ex]): calc.ParseResult[Ex] = {
@@ -49,7 +50,7 @@ object Repl {
       println("Result: " + ev)
       println(" Infix: " + ev.infix)
       ev match {
-        case ReplDef(n, c) => env += Pair(n, c)
+        case ReplDef(n, c) => env += (n -> c)
         case ReplUnDef(n)  => env -= n
         case ReplLoad(n)   => readfile(n)
         case ReplReLoad() => {
@@ -61,7 +62,7 @@ object Repl {
       }
     } catch {
       case e: MyMLException => println(e.getMessage)
-      case e: Throwable     => println(e); println(e.getStackTraceString)
+      case e: Throwable     => println(e); println(e.getStackTrace)
     }
   }
 
@@ -75,7 +76,7 @@ object Repl {
             ep(p.get, env)
           }
         } catch {
-          case e: Throwable => println(e); println(e.getStackTraceString)
+          case e: Throwable => println(e); println(e.getStackTrace)
         }
       })
   }

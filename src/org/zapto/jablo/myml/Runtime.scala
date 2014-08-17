@@ -6,6 +6,8 @@
 
 package org.zapto.jablo.myml
 
+import scala.language.implicitConversions
+
 trait ExHelper {
   final implicit def booleanToConst(b: Boolean): Const = if (b) True else False
   final implicit def bigintToConst(b: BigInt): Const = Z(b)

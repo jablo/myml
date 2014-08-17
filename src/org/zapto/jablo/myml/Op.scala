@@ -13,9 +13,9 @@ import Tri._
 
 case class Op(val infix: String, val mkEx: (Ex, Ex) => Ex, val eval: (Const, Const) => Const) extends ByteCode {
   final def exec(stack: MStack, env: BCEnv): Store = {
-    val (v2, s1) = pop(stack)
-    val (v1, s2) = pop(s1)
-    (s2.push(eval(v1, v2)), env, none)
+    stack match {
+      case v2 :: v1 :: s2 => (eval(v1, v2) :: s2, env, none)
+    }
   }
 }
 
@@ -38,8 +38,9 @@ object Op extends ExHelper {
 
 case class UnOp(val infix: String, val mkEx: Ex => Ex, val eval: Const => Const) extends ByteCode {
   final def exec(stack: MStack, env: BCEnv): Store = {
-    val (v1, s1) = pop(stack)
-    (s1.push(eval(v1)), env, none)
+    stack match {
+      case v1 :: s1 => (eval(v1) :: s1, env, none)
+    }
   }
 }
 
@@ -47,49 +48,48 @@ object UnOp extends ExHelper {
   val ONeg = UnOp("-", Neg, -_)
   val ONot = UnOp("not ", Not, !_)
   val OCar = UnOp("car", Car, (c) => c match {
-    case ConsCell(a, _) => a
-  })
+      case ConsCell(a, _) => a
+    })
   val OCdr = UnOp("cdr", Cdr, (c) => c match {
-    case ConsCell(_, b) => b
-  })
+      case ConsCell(_, b) => b
+    })
   val OTrimStr = UnOp("trim", TrimStr, (c) => {
-    c match {
-      case Str(s) => Str(s.trim)
-      case _      => typerr("Expected string", c)
-    }
-  })
+      c match {
+        case Str(s) => Str(s.trim)
+        case _      => typerr("Expected string", c)
+      }
+    })
   val OStrLen = UnOp("strlen", StrLen, (c) => {
-    c match {
-      case Str(s) => Z(s.length)
-      case _      => typerr("Expected string", c)
-    }
-  })
+      c match {
+        case Str(s) => Z(s.length)
+        case _      => typerr("Expected string", c)
+      }
+    })
   val OToStr = UnOp("tostr", ToStr, (p) => Str(p.infix))
 }
 
 case class Op3(val infix: String, val mkEx: (Ex, Ex, Ex) => Ex, val eval: (Const, Const, Const) => Const) extends ByteCode {
   final def exec(stack: MStack, env: BCEnv): Store = {
-    val (v3, s1) = pop(stack)
-    val (v2, s2) = pop(stack)
-    val (v1, s3) = pop(s1)
-    (s2.push(eval(v1, v2, v3)), env, none)
+    stack match {
+      case v3 :: v2 :: v1 :: s3 => (eval(v1, v2, v3) :: s3, env, none)
+    }
   }
 }
 
 object Op3 extends ExHelper {
   val OSubStr = Op3("substr", SubStr, (a, b, c) => {
-    val s: String = a match {
-      case Str(s) => s
-      case _      => typerr("Expected string", a)
-    }
-    val from: Int = b match {
-      case Z(b) => b.intValue
-      case _    => typerr("Expected int", b)
-    }
-    val to: Int = b match {
-      case Z(c) => c.intValue
-      case _    => typerr("Expected int", c)
-    }
-    Str(s.substring(from, to))
-  })
+      val s: String = a match {
+        case Str(s) => s
+        case _      => typerr("Expected string", a)
+      }
+      val from: Int = b match {
+        case Z(b) => b.intValue
+        case _    => typerr("Expected int", b)
+      }
+      val to: Int = b match {
+        case Z(c) => c.intValue
+        case _    => typerr("Expected int", c)
+      }
+      Str(s.substring(from, to))
+    })
 }

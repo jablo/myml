@@ -6,6 +6,7 @@
 
 package org.zapto.jablo.myml
 
+import scala.language.postfixOps
 import scala.collection._
 import org.zapto.jablo.myml.Ex._
 import scala.annotation.tailrec
