@@ -22,23 +22,23 @@ class Parser extends JavaTokenParsers with PackratParsers {
   type ProgPar = PackratParser[List[Ex]]
 
   // The MyML language parser
-  lazy val program: ProgPar = repsep(repl, ";".?) 
+  lazy val program: ProgPar = repsep(repl, ";".?)
   lazy val expr: ExPar = error | cond | fun | let | letr | arith
 
   // REPL commands
-  lazy val repl: ExPar = 
-    "//.*".r ^^ ((s) => Comment(s)) | 
+  lazy val repl: ExPar =
+    "//.*".r ^^ ((s) => Comment(s)) |
     "def" ~> assignornamedfun ^^ ((p) => { val (a, b) = p; Def(a, b) }) |
     "undef" ~> ident ^^ ((p) => Undef(p)) |
     "load" ~> stringLiteral ^^ ((p)=>Load(stripQuote(p))) |
     "reload" ^^ ((_)=>ReLoad()) |
     "compile" ~> repl ^^ (Compile(_)) |
-    expr 
-  
+    expr
+
   // Control structures
   lazy val error: ExPar = "error" ~ "(" ~> stringLiteral <~ ")" ^^ ((p:String)=>ErrorEx(stripQuote(p))) |
     "error" ~ "(" ~ ")" ^^ ((_)=>ErrorEx("")) | "error" ^^ ((_)=>ErrorEx(""))
-    
+
   lazy val cond: ExPar = ("if" ~> arith <~ "then") ~ expr ~ ("else" ~> expr) ^^ {
     case test ~ yes ~ no => Ife(test, yes, no)
   }
@@ -53,16 +53,16 @@ class Parser extends JavaTokenParsers with PackratParsers {
       val (args, exprs) = asgns.unzip
       App(Fun(args, body), exprs)
     }
-  } 
+  }
   lazy val letr: ExPar = "let*" ~> repsep(assignornamedfun, ";") ~ ("in" ~> expr) ^^ {
     case asgns ~ body => {
       val (args, exprs) = asgns.unzip
       LetR(args, exprs, body)
-    } 
-  } 
+    }
+  }
   lazy val assign: EqPar = ident ~ ("=" ~> expr) ^^ {
     case v ~ e => (v, e)
-  } 
+  }
   lazy val assignornamedfun: EqPar = assign | namedfun ^^ { case (fnam, args, body) => (fnam, Fun(args,body))}
   lazy val builtin: ExPar = "car" ~ "(" ~> expr <~ ")" ^^ (Car) | "cdr" ~ "(" ~> expr <~ ")" ^^ (Cdr) |
     "substr" ~ "(" ~> repN(3, expr) <~ ")" ^^ { case List(e1, e2, e3) => SubStr(e1, e2, e3) } |
@@ -127,8 +127,8 @@ class Parser extends JavaTokenParsers with PackratParsers {
   // Terminals
   lazy val num: ExPar = wholeNumber ~ ("/" ~> wholeNumber) ^^ { case n ~ d => q(BigInt(n), BigInt(d)) } |
     wholeNumber ^^ ((p) => Z(BigInt(p))) |
-    "true" ^^ ((_) => True) | "false" ^^ ((_) => False) | "nil" ^^ ((_) => MNil) | stringLiteral ^^ Str    
+    "true" ^^ ((_) => True) | "false" ^^ ((_) => False) | "nil" ^^ ((_) => MNil) | stringLiteral ^^ Str
   lazy val variable: ExPar = ident ^^ ((p) => Var(p))
-  
+
   def stripQuote(p:String):String = p drop(1) dropRight(1)
 }

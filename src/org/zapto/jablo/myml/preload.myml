@@ -6,17 +6,17 @@ def Y2  = fun(f) => (fun(r) => r(r)) (fun(r) => fun(x) => f(r(r))(x));
 def G = fun(f) => fun(n) => if n=0 then 1 else n*f(n-1);
 def yfac = Y2(G);
 
-def fac = fun(n) => 
+def fac = fun(n) =>
     let* fac2 = fun(n,acc) => if n=0 then acc else fac2(n-1, n*acc)
     in fac2(n,1);
 
-def len = fun(l) => 
+def len = fun(l) =>
     let* len2 = fun(l, acc) => if l=nil then acc else len2(cdr(l),acc+1)
     in len2(l, 0);
 
-def reverse = fun (l) => 
+def reverse = fun (l) =>
     let* helper = fun (l, a) =>
-         if l = nil then a else 
+         if l = nil then a else
             let h = car(l); t=cdr(l)
             in helper(t,h::a)
     in helper(l,nil);
@@ -30,7 +30,7 @@ def map = fun (l,f) =>
 
 def fold = fun (l,f,z) =>
          let* fold2 = fun(l,acc) =>
-              if l = nil then acc else 
+              if l = nil then acc else
               let h=car(l); t=cdr(l)
               in fold2(t,f(acc,h))
          in fold2(l,z);
@@ -45,7 +45,7 @@ def fibs = fun (n) =>
     in fibs2(n,1::0::nil);
 
 
-def ltake = fun(l,n) =>  
+def ltake = fun(l,n) =>
     if n=0 then nil else
     if l=nil then error else
     let h=car(l); t=cdr(l)
@@ -53,8 +53,8 @@ def ltake = fun(l,n) =>
 
 def lcar = fun(l) = car(l);
 def lcdr = fun(l) => if l=nil then error() else (cdr(l))();
-def lfibo = fun(a,b) => a::(fun()=>lfibo(b,a+b));
-def lfibs = lfibo(0,1);
+//def lfibo = fun(a,b) => a::(fun()=>lfibo(b,a+b));
+//def lfibs = lfibo(0,1);
 
 def last = 1
 

@@ -2,10 +2,12 @@ package org.zapto.jablo.myml
 
 import scala.language.postfixOps
 import scala.annotation.tailrec
-import scala.collection.immutable.Stack
 import scala.collection._
 import Ex.{ Env, MutEnv }
 
+/**
+ * Bytecode machine environment - or memory store base class.
+ */
 abstract class BCEnv {
   def get(n: String): Option[Const]
   def +(n: String, e: Const): BCEnv
@@ -17,6 +19,9 @@ abstract class BCEnv {
   def keys: Iterable[String]
 }
 
+/**
+ * Bytecode machine empty environment
+ */
 case object BCNilEnv extends BCEnv {
   def get(s: String): Option[Const] = None
   def +(n: String, e: Const): BCEnv = BCImmutEnv(this, Map() + (n -> e))
@@ -28,6 +33,10 @@ case object BCNilEnv extends BCEnv {
   def keys = List()
 }
 
+/**
+ * An environment - or store - with one or more variables defined; immutable version, used
+ * for normal "let" and function call constructs
+ */
 case class BCImmutEnv(outer: BCEnv = BCNilEnv, val env: Env = Map()) extends BCEnv {
   def get(n: String): Option[Const] = {
     val v = env get n
@@ -45,6 +54,10 @@ case class BCImmutEnv(outer: BCEnv = BCNilEnv, val env: Env = Map()) extends BCE
   def keys = env.keys
 }
 
+/**
+ * An environment - or store - with one or more variables defined, mutable version. The mutable
+ * version is used for the "let*" construct to "tie the knots" so the variables being defined can do self or mutual references.
+ */
 case class BCMutEnv(outer: BCEnv, val env: MutEnv = mutable.Map()) extends BCEnv {
   def get(n: String): Option[Const] = {
     val v = env get n
@@ -62,13 +75,27 @@ case class BCMutEnv(outer: BCEnv, val env: MutEnv = mutable.Map()) extends BCEnv
   def keys = env.keys
 }
 
+/**
+ * The byte code machine combines a stack, a program (list of instructions) and a store (environment) of variables.
+ */
 object ByteCodeMachine {
+  /**
+   * Interpret an expression by first compiling the expression to byte code and then interpreting the byte code
+   */
   final def interp(e: Ex, env: BCEnv = BCNilEnv): Const = interp(Compiler.compile(e), env)
+
+  /**
+   * Interpret a program in an environment - convenience function that allocates an empty stack first.
+   */
   final def interp(insns: List[ByteCode], bcenv: BCEnv): Const = {
     val stack = List[Const]()
     //    val bcenv = BCEnv(NilScope(), benv)
     interp1(stack, insns, bcenv)
   }
+
+  /**
+   * The byte code interpretation function
+   */
   @tailrec
   final def interp1(stack: List[Const], insns: List[ByteCode], env: BCEnv): Const = {
     insns match {
@@ -81,16 +108,27 @@ object ByteCodeMachine {
   }
 }
 
+/**
+ * Byte code base class and shared definitions.
+ */
 abstract class ByteCode extends ExHelper {
+  /**
+   * Machine stack - a list of constant values
+   */
   type MStack = List[Const]
+  /**
+   * Machine store - a stack, an environment of variables, and a list of instructions
+   */
   type Store = (MStack, BCEnv, List[ByteCode])
+  /**
+   * Exceute a byte code instruction in a specific machine state, giving a new machine state
+   */
   def exec(stack: List[Const], env: BCEnv): Store;
-  //  protected def pop(s: MStack): (Const, MStack) = (s.head, s.tail)
-  protected val none = List[ByteCode]()
+  protected val noCode = List[ByteCode]()
 }
 
 case class Push(c: Const) extends ByteCode {
-  def exec(stack: MStack, env: BCEnv): Store = (c :: stack, env, none)
+  def exec(stack: MStack, env: BCEnv): Store = (c :: stack, env, noCode)
 }
 
 case object Lookup extends ByteCode {
@@ -100,7 +138,7 @@ case object Lookup extends ByteCode {
         val v = env get n
         v match {
           case None    => err("Variable not found " + n)
-          case Some(c) => (c :: s1, env, none)
+          case Some(c) => (c :: s1, env, noCode)
         }
       case _ => typerr("Extected string", stack head)
     }
@@ -110,7 +148,8 @@ case object Lookup extends ByteCode {
 case object MakeClosure extends ByteCode {
   def exec(stack: MStack, env: BCEnv): Store = {
     stack match {
-      case Subr(args, code, _) :: s1 => (Subr(args, code, env) :: s1, env, none)
+      case Subr(args, code, _) :: s1 => (Subr(args, code, env) :: s1, env, noCode)
+      case _                         => typerr("Extected Subr", stack head)
     }
   }
 }
@@ -118,11 +157,12 @@ case object MakeClosure extends ByteCode {
 case object Call extends ByteCode {
   def exec(stack: MStack, env: BCEnv): Store = {
     stack match {
-      case Subr(fargs, code, fenv) :: s1 =>      
+      case Subr(fargs, code, fenv) :: s1 =>
         val n = fargs size
         val argvalpairs = (fargs reverse) zip (s1 take n)
         val s2 = s1 drop n
-        (s2, fenv ++ argvalpairs, code)
+        (s2, fenv ++ argvalpairs, code) // TODO: Is this a bug? Should it bw argvalpairs ++ fenv ?
+      case _ => typerr("Extected Subr", stack head)
     }
   }
 }
@@ -131,19 +171,20 @@ case object Cond extends ByteCode {
   def exec(stack: MStack, env: BCEnv): Store = {
     stack match {
       case test :: Code(fcode) :: Code(tcode) :: s1 => (s1, env, if (test == True) tcode else fcode)
+      case _                                        => typerr("Extected test :: code :: code", stack head)
     }
   }
 }
 
 case object RecEnv extends ByteCode {
-  def exec(stack: MStack, env: BCEnv): Store = (stack, BCMutEnv(env), none)
+  def exec(stack: MStack, env: BCEnv): Store = (stack, BCMutEnv(env), noCode)
 }
 
 case object Assign extends ByteCode {
   def exec(stack: MStack, env: BCEnv): Store = {
     stack match {
-      case Str(n) :: v :: s2 =>  (s2, env + (n, v), none)
-      case _      => typerr("Expected string", stack head)
+      case Str(n) :: v :: s2 => (s2, env + (n, v), noCode)
+      case _                 => typerr("Expected string", stack head)
     }
   }
 }
@@ -151,7 +192,8 @@ case object Assign extends ByteCode {
 case object UnAssign extends ByteCode {
   def exec(stack: MStack, env: BCEnv): Store = {
     stack match {
-      case Str(n) :: s1 => (s1, env - n, none)
+      case Str(n) :: s1 => (s1, env - n, noCode)
+      case _            => typerr("Extected string", stack head)
     }
   }
 }

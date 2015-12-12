@@ -12,7 +12,6 @@ trait ExHelper {
   final implicit def booleanToConst(b: Boolean): Const = if (b) True else False
   final implicit def bigintToConst(b: BigInt): Const = Z(b)
   final implicit def stringToConst(s: String): Const = Str(s)
-//  final implicit def constToEvalStep(c: Const): EvalStep = Done(c)
 
   final def typerr(s: String, e: Ex): Nothing = throw new TypeErrorException(s + " in: " + e.infix)
   final def err(s: String, e: Ex): Nothing = throw new MyMLException(s + " " + e.infix)

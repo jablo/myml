@@ -67,7 +67,7 @@ object Repl {
   }
 
   def repl: Unit = {
-    Iterator.continually({ print("MyML> "); Console.readLine }).takeWhile((l) => l != null && l != "quit").
+    Iterator.continually({ print("MyML> "); scala.io.StdIn.readLine }).takeWhile((l) => l != null && l != "quit").
       foreach(line => {
         try {
           if (line.trim != "") {
