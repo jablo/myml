@@ -83,13 +83,13 @@ object ByteCodeMachine {
    * Interpret an expression by first compiling the expression to byte code and then interpreting the byte code
    */
   final def interp(e: Ex, env: BCEnv = BCNilEnv): Const = interp(Compiler.compile(e), env)
+  final def interp(insns: List[ByteCode]): Const = interp(insns, BCNilEnv)
 
   /**
    * Interpret a program in an environment - convenience function that allocates an empty stack first.
    */
   final def interp(insns: List[ByteCode], bcenv: BCEnv): Const = {
     val stack = List[Const]()
-    //    val bcenv = BCEnv(NilScope(), benv)
     interp1(stack, insns, bcenv)
   }
 
@@ -101,7 +101,7 @@ object ByteCodeMachine {
     insns match {
       case Nil => if (!stack.isEmpty) stack.head else MVoid
       case insn :: insns1 =>
-        println("Exec: " + insn)
+        //println("Exec: " + insn)
         val (stack1, scope1, morecode) = insn.exec(stack, env)
         interp1(stack1, morecode ++ insns1, scope1)
     }

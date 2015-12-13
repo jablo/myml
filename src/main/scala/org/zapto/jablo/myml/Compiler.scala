@@ -4,8 +4,8 @@ package org.zapto.jablo.myml
 object Compiler extends ExHelper {
   def compile(e: Ex): List[ByteCode] = e match {
     case ErrorEx(n)          => List(Push(Str(n)), ErrIns)
-    case Var(n)              => List(Push(n), Load)
-    case Par(e1)             => compile(e)
+    case Var(n)              => List(Push(n), Lookup)
+    case Par(e1)             => compile(e1)
     case Un(e1, op)          => compile(e1) :+ op
     case Bin(e1, e2, op)     => compile(e1) ++ compile(e2) :+ op
     case Tri(e1, e2, e3, op) => compile(e1) ++ compile(e2) ++ compile(e3) :+ op

@@ -7,7 +7,7 @@ package org.zapto.jablo.myml
 import scala.language.postfixOps
 import scala.collection._
 import scala.io.Source
-import java.io.{ FileReader, FileNotFoundException, IOException }
+import java.io.{ FileReader }
 
 object Repl {
   val env = BCMutEnv(BCNilEnv, mutable.Map[String, Const]())
@@ -36,7 +36,7 @@ object Repl {
   }
 
   def readresource(n: String): Unit = {
-    val preload = Source.fromURL(getClass.getResource(n))
+    val preload = Source.fromURL(getClass().getResource(n))
     val p: calc.ParseResult[List[Ex]] = calc.parseAll(calc.program, preload.bufferedReader)
     check2(p)
     p.get map (ep(_, env))
@@ -46,7 +46,9 @@ object Repl {
     try {
       println("Parsed: " + exp)
       println(" Infix: " + (exp infix))
-      val ev = ByteCodeMachine.interp(Compiler.compile(exp), env)
+      val code = Compiler.compile(exp)
+      println(" Code : " + code)
+      val ev = ByteCodeMachine.interp(code, env)
       println("Result: " + ev)
       println(" Infix: " + ev.infix)
       ev match {
@@ -85,7 +87,10 @@ object Repl {
    * @param args the command line arguments
    */
   def main(args: Array[String]): Unit = {
-//    readresource("preload.myml")
+    val whereami = System.getProperty("user.dir")
+    println(whereami)
+//    readresource("org/zapto/jablo/myml/preload.myml")
+    readresource("preload.myml")
     repl
   }
 }
