@@ -3,7 +3,7 @@ import scalariform.formatter.preferences._
 lazy val root = (project in file(".")).
   settings(commonSettings: _*).
   settings(
-    name := "SampleProject",
+    name := "MyML",
     libraryDependencies ++= Seq()
   )
 

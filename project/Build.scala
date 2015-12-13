@@ -8,7 +8,7 @@ import com.typesafe.sbt.SbtScalariform.ScalariformKeys
  */
 object Build extends sbt.Build {
 
-  lazy val root = Project("SampleProject", file("."))
+  lazy val root = Project("MyML", file("."))
   .settings(basicSettings: _*)
   .settings(libraryDependencies ++= Dependencies.basic)
 
@@ -43,6 +43,5 @@ object Dependencies {
     "junit" % "junit" % "4.11" % "test",
     "org.seleniumhq.selenium" % "selenium-java" % "2.25.0" % "test",
     "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.2"
-//    "junit" % "junit" % "4.10"
   )
 }
