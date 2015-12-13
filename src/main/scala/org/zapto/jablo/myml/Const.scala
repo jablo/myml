@@ -125,13 +125,13 @@ case class Str(s: String) extends Const {
 }
 
 // Closures for the direct interpreter
-case class Clo(fargs: List[String], body: Ex, env: Env) extends Const {
+case class Clo(fargs: List[String], body: Ex, env: BCEnv) extends Const {
   // avoid printing environment values - letrec creates cyclic environment
   override def infix = Fun(fargs, body).infix + "@" + (env keys).mkString("{", ",", "}")
   override def toString = "Clo(" + fargs + ", " + body + ", " + (env keys).mkString("{", ",", "}") + ")"
 }
 
-// Closures for the bytecode interpreter 
+// Closures for the bytecode interpreter
 case class Subr(fargs: List[String], code: List[ByteCode], env: BCEnv) extends Const {
   // avoid printing environment values - letrec creates cyclic environment
   override def infix = fargs.mkString("[", ",", "] ") + code.mkString("[", ",", "]")

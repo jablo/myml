@@ -108,7 +108,7 @@ case class LetR(fargs: List[String], args: List[Ex], body: Ex) extends Ex {
   def infix = "let* " + ((fargs zip args) map (p => { val (a, e) = p; a + "=" + e.infix })).mkString("; ") + " in " + body.infix
 }
 
-// For the REPL 
+// For the REPL
 case class Def(n: String, e: Ex) extends Ex {
   def infix = "def " + n + "=" + e.infix
 }

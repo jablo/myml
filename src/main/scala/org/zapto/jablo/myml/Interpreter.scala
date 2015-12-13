@@ -9,11 +9,13 @@ package org.zapto.jablo.myml
 import scala.language.postfixOps
 import scala.collection._
 import org.zapto.jablo.myml.Ex._
-import scala.annotation.tailrec
 
+/**
+ * A direct interpreter which walks the syntax tree and recursively interprets the program
+ */
 object Interpreter extends ExHelper {
 //  @tailrec can't use it - there are both tailrec call (in App(...)) and non-tailrec calls (everywhere else)
-  final def interp(e: Ex, env: Env): Const = {
+  final def interp(e: Ex, env: BCEnv): Const = {
     e match {
       case ErrorEx(n) => throw new MyMLException("Error: " + n)
       case Var(n) => env get n match {
@@ -37,14 +39,15 @@ object Interpreter extends ExHelper {
         fun match {
           case _@ Clo(fargs, body, fenv) =>
             val actarg = args map ((arg: Ex) => interp(arg, env))
-            val env2 = fenv ++ Map(fargs zip actarg: _*)
+            val argbindings = (fargs zip actarg)
+            val env2 = fenv ++ argbindings
             interp(body, env2)
           case _ => typerr("Not a function", fexp)
         }
       }
       case LetR(fargs, args, body) => {
         // Use a mutable map initialized with current env so we can evaluate arguments in their own environmnent, creating a cyclic environment
-        val letrecenv = mutable.Map[String, Const](env toList: _*)
+        val letrecenv = BCMutEnv(env)  // mutable.Map[String, Const](env toList: _*)
         val actarg = args map (interp(_, letrecenv));
         letrecenv ++= fargs zip actarg
         interp(body, letrecenv)

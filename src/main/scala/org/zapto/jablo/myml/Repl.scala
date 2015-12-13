@@ -48,7 +48,8 @@ object Repl {
       println(" Infix: " + (exp infix))
       val code = Compiler.compile(exp)
       println(" Code : " + code)
-      val ev = ByteCodeMachine.interp(code, env)
+//      val ev = ByteCodeMachine.interp(code, env)
+      val ev = Interpreter.interp(exp, env)
       println("Result: " + ev)
       println(" Infix: " + ev.infix)
       ev match {
