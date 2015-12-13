@@ -25,8 +25,13 @@ object ByteCodeMachine {
   /**
    * The byte code interpretation function
    */
+  var n = 0
   @tailrec
   final def interp1(stack: List[Const], insns: List[ByteCode], env: BCEnv): Const = {
+    if (n == 1000) {
+      throw new RuntimeException("STTOOO");
+    }
+    n = n + 1
     insns match {
       case Nil => if (!stack.isEmpty) stack.head else MVoid
       case insn :: insns1 =>

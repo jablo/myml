@@ -27,7 +27,7 @@ abstract class BCEnv {
  * Empty environment
  */
 case object BCNilEnv extends BCEnv {
-  def get(s: String): Option[Const] = None
+  def get(s: String): Option[Const] = { print("Lookup "); print(s); println("=None"); None }
   def +(n: String, e: Const): BCEnv = BCImmutEnv(this, Map() + (n -> e))
   def -(n: String): BCEnv = throw new RuntimeException("Cant undefine from empty scope")
   def ++(es: List[(String, Const)]): BCEnv = BCImmutEnv(this, Map() ++ es)
@@ -46,7 +46,7 @@ case class BCImmutEnv(outer: BCEnv = BCNilEnv, val env: Env = Map()) extends BCE
     val v = env get n
     v match {
       case None    => outer get n
-      case Some(e) => Some(e)
+      case Some(e) => { print("Lookup "); print(n); print("="); println(e); Some(e) }
     }
   }
   def +(n: String, e: Const): BCEnv = BCImmutEnv(outer, env + (n -> e))
@@ -67,7 +67,7 @@ case class BCMutEnv(outer: BCEnv, val env: MutEnv = mutable.Map()) extends BCEnv
     val v = env get n
     v match {
       case None    => outer get n
-      case Some(e) => Some(e)
+      case Some(e) => { print("Lookup "); print(n); print("="); println(e); Some(e) }
     }
   }
   def +(n: String, e: Const): BCEnv = { env += (n -> e); this }

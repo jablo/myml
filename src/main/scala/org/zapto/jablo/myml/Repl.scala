@@ -36,7 +36,9 @@ object Repl {
   }
 
   def readresource(n: String): Unit = {
-    val preload = Source.fromURL(getClass().getResource(n))
+    val url = getClass().getResource(n)
+    print("Reading "); println(url)
+    val preload = Source.fromURL(url)
     val p: calc.ParseResult[List[Ex]] = calc.parseAll(calc.program, preload.bufferedReader)
     check2(p)
     p.get map (ep(_, env))
@@ -48,8 +50,8 @@ object Repl {
       println(" Infix: " + (exp infix))
       val code = Compiler.compile(exp)
       println(" Code : " + code)
-//      val ev = ByteCodeMachine.interp(code, env)
-      val ev = Interpreter.interp(exp, env)
+      val ev = ByteCodeMachine.interp(code, env)
+//      val ev = Interpreter.interp(exp, env)
       println("Result: " + ev)
       println(" Infix: " + ev.infix)
       ev match {
@@ -70,7 +72,7 @@ object Repl {
   }
 
   def repl: Unit = {
-    Iterator.continually({ print("MyML> "); scala.io.StdIn.readLine }).takeWhile((l) => l != null && l != "quit").
+    Iterator.continually({ scala.io.StdIn.readLine("MyMl> ") }).takeWhile((l) => l != null && l != "quit").
       foreach(line => {
         try {
           if (line.trim != "") {
@@ -91,7 +93,7 @@ object Repl {
     val whereami = System.getProperty("user.dir")
     println(whereami)
 //    readresource("org/zapto/jablo/myml/preload.myml")
-    readresource("preload.myml")
+//    readresource("preload.myml")
     repl
   }
 }
