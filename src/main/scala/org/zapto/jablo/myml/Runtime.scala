@@ -16,6 +16,23 @@ trait ExHelper {
   final def typerr(s: String, e: Ex): Nothing = throw new TypeErrorException(s + " in: " + e.infix)
   final def err(s: String, e: Ex): Nothing = throw new MyMLException(s + " " + e.infix)
   final def err(s: String): Nothing = throw new MyMLException(s)
+
+  /**
+   * Machine stack - a list of constant values
+   */
+  type MStack = List[Const]
+  /**
+   * Environment stack / stack frame stack
+   */
+  type EnvStack = List[BCEnv]
+  /**
+   * Machine store - a stack, an environment of variables, and a list of instructions
+   */
+  type MachineState = (MStack, EnvStack, List[ByteCode])
+  /**
+   * Exceute a byte code instruction in a specific machine state, giving a new machine state
+   */
+
 }
 
 class MyMLException(msg: String = null, cause: Throwable = null) extends java.lang.Exception(msg, cause)

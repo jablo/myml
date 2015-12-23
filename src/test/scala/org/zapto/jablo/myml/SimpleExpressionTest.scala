@@ -87,4 +87,14 @@ class SimpleExprSuite extends TestHelper {
     assert(p.get == reparse(p))
   }
 
+  test("Dynamic vs. static scope") {
+    val p = parser.parseAll(parser.expr, "let y=1 in let f=fun(x)=>x+y in let y=2 in f(y)")
+    assert((Z(3):Ex) == eval(p.get, Map()))
+  }
+
+  test("Dynamic vs. static scope2") {
+    val p = parser.parseAll(parser.expr, "let f=fun(x)=>x+y in let y=2 in f(y)")
+    assert((Z(3):Ex) == eval(p.get, Map("y" -> Z(1))))
+  }
+
 }

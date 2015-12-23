@@ -10,7 +10,7 @@ object Compiler extends ExHelper {
     case Bin(e1, e2, op)     => compile(e1) ++ compile(e2) :+ op
     case Tri(e1, e2, e3, op) => compile(e1) ++ compile(e2) ++ compile(e3) :+ op
     case Ife(e1, e2, e3)     => List(Push(Code(compile(e2))), Push(Code(compile(e3)))) ++ compile(e1) :+ Cond
-    case Fun(fargs, body)    => List(Push(Subr(fargs, compile(body), BCNilEnv)), MakeClosure)
+    case Fun(fargs, body)    => List(Push(Subr(fargs, compile(body) :+ Return, BCNilEnv)), MakeClosure)
     case App(fexp, args) =>
       val argscode: List[ByteCode] = (args.map(compile)).flatten
       val fcode = compile(fexp)

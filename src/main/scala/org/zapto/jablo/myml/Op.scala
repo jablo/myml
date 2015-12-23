@@ -13,9 +13,9 @@ import Tri._
 // abstract syntax tree interpreter and the bytecode interpreter.
 
 case class Op(val infix: String, val mkEx: (Ex, Ex) => Ex, val eval: (Const, Const) => Const) extends ByteCode {
-  final def exec(stack: MStack, env: BCEnv): MachineState = {
+  final def exec(stack: MStack, envStack: EnvStack): MachineState = {
     stack match {
-      case v2 :: v1 :: s2 => (eval(v1, v2) :: s2, env, noCode)
+      case v2 :: v1 :: s2 => (eval(v1, v2) :: s2, envStack, noCode)
       case _ => typerr("Expected two operands on stack", stack head)
     }
   }
@@ -40,9 +40,9 @@ object Op extends ExHelper {
 }
 
 case class UnOp(val infix: String, val mkEx: Ex => Ex, val eval: Const => Const) extends ByteCode {
-  final def exec(stack: MStack, env: BCEnv): MachineState = {
+  final def exec(stack: MStack, envStack: EnvStack): MachineState = {
     stack match {
-      case v1 :: s1 => (eval(v1) :: s1, env, noCode)
+      case v1 :: s1 => (eval(v1) :: s1, envStack, noCode)
       case _ => typerr("Expected non-empty stack", stack head)
     }
   }
@@ -74,9 +74,9 @@ object UnOp extends ExHelper {
 }
 
 case class Op3(val infix: String, val mkEx: (Ex, Ex, Ex) => Ex, val eval: (Const, Const, Const) => Const) extends ByteCode {
-  final def exec(stack: MStack, env: BCEnv): MachineState = {
+  final def exec(stack: MStack, envStack: EnvStack): MachineState = {
     stack match {
-      case v3 :: v2 :: v1 :: s3 => (eval(v1, v2, v3) :: s3, env, noCode)
+      case v3 :: v2 :: v1 :: s3 => (eval(v1, v2, v3) :: s3, envStack, noCode)
       case _ => typerr("Expected 3 values on stack", stack head)
     }
   }
@@ -89,7 +89,7 @@ object Op3 extends ExHelper {
         case _      => typerr("Expected string", a)
       }
       val from: Int = b match {
-        case Z(b) => b.intValue
+        case Z(c) => c.intValue
         case _    => typerr("Expected int", b)
       }
       val to: Int = b match {
